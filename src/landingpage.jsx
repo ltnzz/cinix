@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   Home,
   Star,
@@ -14,21 +14,17 @@ import {
   Heart,
 } from "lucide-react";
 
-// Impor halaman-halaman lain
+// Impor semua halaman/komponen
 import SearchPage from "./searchpage.jsx";
 import DetailPage from "./detailmovie.jsx";
 import LoginPage from "./loginpage.jsx";
 import SignUpPage from "./signup.jsx";
-import PaymentPage from "./payment.jsx"; // Impor baru
+import PaymentPage from "./payment.jsx";
 
 // ===================================================================
-// KOMPONEN HEADER UTAMA (untuk Homepage)
+// KOMPONEN HEADER UTAMA (Dipakai di Homepage)
 // ===================================================================
-function MainHeader({
-  onNavigateSearch,
-  onNavigateHome,
-  onNavigateLogin,
-}) {
+function MainHeader({ onNavigateHome, onNavigateLogin, onNavigateSearch }) {
   return (
     <header className="flex items-center justify-between px-8 py-4 bg-[#f5f1dc] shadow">
       <div className="flex items-center gap-4">
@@ -38,76 +34,67 @@ function MainHeader({
           <span>Jabodetabek</span>
         </div>
       </div>
-      <div className="flex gap-6 text-[#2a4c44] font-semibold">
-        <button
+      <div className="flex gap-6 text-gray-700">
+        <Home
+          className="text-[#2a4c44] cursor-pointer"
           onClick={onNavigateHome}
-          className="flex items-center gap-2 hover:opacity-70"
-        >
-          <Home className="text-[#2a4c44]" />
-          <span>Home</span>
-        </button>
-        <button className="flex items-center gap-2 hover:opacity-70">
-          <Ticket />
-          <span>Tickets</span>
-        </button>
-        <button className="flex items-center gap-2 hover:opacity-70">
-          <Heart />
-          <span>Wishlist</span>
-        </button>
-        <button
-          onClick={onNavigateLogin}
-          className="flex items-center gap-2 hover:opacity-70"
-        >
-          <User />
-          <span>Profile</span>
-        </button>
+        />
+        <Star className="cursor-pointer" />
+        <List className="cursor-pointer" />
+        <User className="cursor-pointer" onClick={onNavigateLogin} />
       </div>
     </header>
   );
 }
 
 // ===================================================================
-// KOMPONEN CAROUSEL (untuk Homepage)
+// KOMPONEN HOME PAGE (Carousel, dll)
 // ===================================================================
-function MovieCarousel({ onNavigateDetail }) {
+function HomePage({
+  onNavigateHome,
+  onNavigateLogin,
+  onNavigateSearch,
+  onNavigateDetail,
+}) {
   const originalMovies = [
     {
       title: "Stollen Girl",
       img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSW0trXZ0E9GJ7bFXfr98f0UOGcMWJneYrDLw&s",
-      release: "10 Oktober",
-      genres: "Action, Thriller",
-      duration: "2h 5m",
+      genre: "Action, Thriller",
+      duration: "2j 15m",
+      release: "10 Oktober 2025"
     },
     {
       title: "Tron Ares (2025)",
       img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8tq8lygfqv4hEIDsAjS88Rdh-z99CusKQyg&s",
-      release: "10 Oktober",
-      genres: "Sci-fi, Action",
-      duration: "2h 10m",
+      genre: "Sci-fi, Action",
+      duration: "2j 30m",
+      release: "10 Oktober 2025"
     },
     {
       title: "Chainsaw Man",
       img: "https://m.media-amazon.com/images/M/MV5BNDQzMjc2ZDQtMjY2NS00M2UxLTg2OTktNWVjZmY5YjA4MzVhXkEyXkFqcGc@._V1_.jpg",
-      release: "12 Oktober",
-      genres: "Anime, Action",
-      duration: "1h 45m",
+      genre: "Anime, Action",
+      duration: "1j 45m",
+      release: "10 Oktober 2025"
     },
     {
       title: "Black Phone 2",
       img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ0XQBg8-xS-u8bh5ntG5eolzWzRU8TMs4HDQ&s",
-      release: "15 Oktober",
-      genres: "Horror, Thriller",
-      duration: "1h 55m",
+      genre: "Horror, Thriller",
+      duration: "2j 05m",
+      release: "10 Oktober 2025"
     },
   ];
 
-  // Logika Looping Carousel (Triple List)
-  const displayMovies = [
+  // Logika Carousel (Triple List)
+  const moviesWithClones = [
     ...originalMovies,
     ...originalMovies,
     ...originalMovies,
   ];
-  const [currentSlide, setCurrentSlide] = useState(originalMovies.length); // Mulai di list tengah
+  const initialSlide = originalMovies.length;
+  const [currentSlide, setCurrentSlide] = useState(initialSlide);
   const [transitionEnabled, setTransitionEnabled] = useState(true);
   const slideDistance = 21.5; // w-80 (20rem) + gap-6 (1.5rem)
 
@@ -132,86 +119,17 @@ function MovieCarousel({ onNavigateDetail }) {
     }
   };
 
-  let dotIndex = (currentSlide % originalMovies.length);
-
+  const dotIndex = (currentSlide - originalMovies.length) % originalMovies.length;
   const transitionClass = transitionEnabled
     ? "transition-transform duration-500 ease-in-out"
     : "";
 
   return (
-    <section className="py-10 px-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-[#fff9e6]">
-          Sedang tayang di cinema!
-        </h2>
-        <Search size={24} className="text-[#fff9e6] cursor-pointer" />
-      </div>
-
-      <div className="overflow-hidden">
-        <div
-          className={`flex gap-6 ${transitionClass}`}
-          style={{
-            transform: `translateX(-${currentSlide * slideDistance}rem)`,
-          }}
-          onTransitionEnd={handleTransitionEnd}
-        >
-          {displayMovies.map((movie, index) => (
-            <div
-              key={index}
-              className="flex-shrink-0 cursor-pointer group"
-              onClick={() => onNavigateDetail(movie)} // Navigasi saat diklik
-            >
-              <img
-                src={movie.img}
-                alt={movie.title}
-                className="w-80 h-112 object-cover rounded-xl shadow-lg group-hover:opacity-80 transition-opacity"
-              />
-              <p className="mt-2 text-[#fff9e6] text-center font-semibold">
-                {movie.title}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="flex justify-between items-center mt-6 text-[#fff9e6]">
-        <button
-          onClick={prevSlide}
-          className="p-2 bg-[#fff9e6] rounded-full shadow hover:bg-gray-200 transition"
-        >
-          <ArrowLeft size={20} className="text-[#2a4c44]" />
-        </button>
-        <div className="flex gap-1.5">
-          {originalMovies.map((_, i) => (
-            <div
-              key={i}
-              className={`w-2.5 h-2.5 rounded-full ${
-                i === dotIndex ? "bg-[#fff9e6]" : "bg-gray-400"
-              }`}
-            ></div>
-          ))}
-        </div>
-        <button
-          onClick={nextSlide}
-          className="p-2 bg-[#fff9e6] rounded-full shadow hover:bg-gray-200 transition"
-        >
-          <ArrowRight size={20} className="text-[#2a4c44]" />
-        </button>
-      </div>
-    </section>
-  );
-}
-
-// ===================================================================
-// KOMPONEN HOMEPAGE
-// ===================================================================
-function HomePage({ onNavigateSearch, onNavigateDetail, onNavigateLogin }) {
-  return (
     <div className="min-h-screen bg-[#6a8e7f] text-gray-900 font-sans">
       <MainHeader
-        onNavigateSearch={onNavigateSearch}
-        onNavigateHome={() => {}} // Sudah di home
+        onNavigateHome={onNavigateHome}
         onNavigateLogin={onNavigateLogin}
+        onNavigateSearch={onNavigateSearch}
       />
 
       {/* Banner */}
@@ -226,14 +144,77 @@ function HomePage({ onNavigateSearch, onNavigateDetail, onNavigateLogin }) {
         <Film size={64} className="text-yellow-300 rotate-12" />
       </div>
 
-      {/* Movie Carousel */}
-      <MovieCarousel onNavigateDetail={onNavigateDetail} />
+      {/* Movie Section */}
+      <section className="py-10 px-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-[#fff9e6]">
+            Sedang tayang di cinema!
+          </h2>
+          {/* --- FIX: Menambahkan onClick ke ikon Search --- */}
+          <Search
+            size={24}
+            className="text-[#fff9e6] cursor-pointer"
+            onClick={onNavigateSearch}
+          />
+        </div>
+
+        <div className="overflow-hidden">
+          <div
+            className={`flex gap-6 ${transitionClass}`}
+            style={{
+              transform: `translateX(-${currentSlide * slideDistance}rem)`,
+            }}
+            onTransitionEnd={handleTransitionEnd}
+          >
+            {moviesWithClones.map((movie, index) => (
+              <div
+                key={index}
+                className="flex-shrink-0 cursor-pointer"
+                onClick={() => onNavigateDetail(movie)} // Poster dapat diklik
+              >
+                <img
+                  src={movie.img}
+                  alt={movie.title}
+                  className="w-80 h-112 object-cover rounded-xl shadow-lg"
+                />
+                <p className="mt-2 text-[#fff9e6] text-center">{movie.title}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Kontrol (Tombol & Dots) */}
+        <div className="flex justify-between items-center mt-6 text-[#fff9e6]">
+          <button
+            onClick={prevSlide}
+            className="p-2 bg-[#fff9e6] rounded-full shadow hover:bg-gray-200 transition"
+          >
+            <ArrowLeft size={20} className="text-[#2a4c44]" />
+          </button>
+          <div className="flex gap-1.5">
+            {originalMovies.map((_, i) => (
+              <div
+                key={i}
+                className={`w-2.5 h-2.5 rounded-full ${
+                  i === dotIndex ? "bg-[#fff9e6]" : "bg-gray-400"
+                }`}
+              ></div>
+            ))}
+          </div>
+          <button
+            onClick={nextSlide}
+            className="p-2 bg-[#fff9e6] rounded-full shadow hover:bg-gray-200 transition"
+          >
+            <ArrowRight size={20} className="text-[#2a4c44]" />
+          </button>
+        </div>
+      </section>
     </div>
   );
 }
 
 // ===================================================================
-// KOMPONEN APP UTAMA (ROUTER)
+// KOMPONEN 'ROUTER' UTAMA
 // ===================================================================
 export default function Cinix() {
   const [currentPage, setCurrentPage] = useState("home");
@@ -245,7 +226,7 @@ export default function Cinix() {
   const handleNavigateHome = () => setCurrentPage("home");
   const handleNavigateSearch = () => setCurrentPage("search");
   const handleNavigateLogin = () => setCurrentPage("login");
-  const handleNavigateSignUp = () => setCurrentPage("register");
+  const handleNavigateRegister = () => setCurrentPage("register");
 
   const handleNavigateDetail = (movie) => {
     setSelectedMovie(movie);
@@ -259,64 +240,37 @@ export default function Cinix() {
     setCurrentPage("payment");
   };
 
-  // Render Halaman berdasarkan State
+  // Kumpulan prop navigasi untuk diteruskan ke setiap halaman
+  const navProps = {
+    onNavigateHome: handleNavigateHome,
+    onNavigateSearch: handleNavigateSearch,
+    onNavigateLogin: handleNavigateLogin,
+    onNavigateRegister: handleNavigateRegister,
+    onNavigateDetail: handleNavigateDetail,
+    onNavigatePayment: handleNavigatePayment,
+  };
+
+  // Render halaman berdasarkan state 'currentPage'
   switch (currentPage) {
-    case "home":
-      return (
-        <HomePage
-          onNavigateSearch={handleNavigateSearch}
-          onNavigateDetail={handleNavigateDetail}
-          onNavigateLogin={handleNavigateLogin}
-        />
-      );
     case "search":
-      return (
-        <SearchPage
-          onNavigateHome={handleNavigateHome}
-          onNavigateLogin={handleNavigateLogin}
-        />
-      );
+      return <SearchPage {...navProps} />;
     case "detail":
-      return (
-        <DetailPage
-          movie={selectedMovie}
-          onNavigateHome={handleNavigateHome}
-          onNavigateLogin={handleNavigateLogin}
-          onNavigatePayment={handleNavigatePayment} // Prop baru
-        />
-      );
+      return <DetailPage {...navProps} movie={selectedMovie} />;
     case "login":
-      return (
-        <LoginPage
-          onNavigateHome={handleNavigateHome}
-          onNavigateSignUp={handleNavigateSignUp}
-        />
-      );
+      return <LoginPage {...navProps} />;
     case "register":
-      return (
-        <SignUpPage
-          onNavigateHome={handleNavigateHome}
-          onNavigateLogin={handleNavigateLogin}
-        />
-      );
+      return <SignUpPage {...navProps} />;
     case "payment":
       return (
         <PaymentPage
+          {...navProps}
           movie={selectedMovie}
           cinema={selectedCinema}
           time={selectedTime}
-          onNavigateHome={handleNavigateHome}
-          onNavigateLogin={handleNavigateLogin}
-          onNavigateBack={() => setCurrentPage("detail")} // Kembali ke detail
         />
       );
+    case "home":
     default:
-      return (
-        <HomePage
-          onNavigateSearch={handleNavigateSearch}
-          onNavigateDetail={handleNavigateDetail}
-          onNavigateLogin={handleNavigateLogin}
-        />
-      );
+      return <HomePage {...navProps} />;
   }
 }
