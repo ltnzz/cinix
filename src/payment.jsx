@@ -92,17 +92,11 @@ const createSeats = () => {
     leftSeatNumbers.forEach((num) => {
       const id = `${row}${num}`;
       let status = "available";
-      if ((row === "K" && num === 10) || (row === "J" && num === 12)) {
-        status = "taken";
-      }
       seats.push({ id, row, num, status, block: "left" });
     });
     rightSeatNumbers.forEach((num) => {
       const id = `${row}${num}`;
       let status = "available";
-      if (row === "A" && num === 5) {
-        status = "taken";
-      }
       seats.push({ id, row, num, status, block: "right" });
     });
   });
