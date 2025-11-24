@@ -76,6 +76,7 @@ function SearchHeader({ onNavigateHome, onNavigateLogin }) {
 }
 
 export default function SearchPage({ onNavigateHome, onNavigateLogin }) {
+  //bakal ada logic untuk search bar
   const [activeCity, setActiveCity] = useState("JAKARTA");
   const cities = ["JAKARTA", "BOGOR", "DEPOK", "TANGERANG", "BEKASI"];
 

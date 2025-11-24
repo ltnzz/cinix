@@ -87,6 +87,7 @@ export default function DetailPage({
   const [activeDate, setActiveDate] = useState("11");
   const [activeCity, setActiveCity] = useState("JAKARTA");
 
+  // ini bakal nyambung ke database
   const dates = [
     { day: "SUN", date: "09" },
     { day: "MON", date: "10" },
@@ -96,8 +97,11 @@ export default function DetailPage({
     { day: "FRI", date: "14" },
   ];
 
+  // ini jg
   const cities = ["JAKARTA", "BOGOR", "DEPOK", "TANGERANG", "BEKASI"];
 
+
+  // ini jg
   const displayMovie =
     movie || {
       title: "TRON ARES (2025)",
@@ -107,6 +111,8 @@ export default function DetailPage({
       duration: "2h 10m",
     };
 
+
+  // ini jg
   const cinemaToShow = {
     name: "AEON MALL TANJUNG BARAT XXI",
     brand: "Cinema XXI",
@@ -155,7 +161,7 @@ export default function DetailPage({
               )}
 
               <button className="flex items-center gap-3 mt-6 text-xl font-semibold hover:opacity-80 transition-opacity">
-                 <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwmGwFce3dRjF77R93jk7MfpCUbXmsyXIZTQVmcwKJbwAenizvE8dOh36T56qL12hy-a8&usqp=CAU" alt="Play" className="w-12 h-12" />
+                  <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTwmGwFce3dRjF77R93jk7MfpCUbXmsyXIZTQVmcwKJbwAenizvE8dOh36T56qL12hy-a8&usqp=CAU" alt="Play" className="w-12 h-12" />
                 Lihat trailer
               </button>
             </div>

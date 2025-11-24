@@ -112,8 +112,10 @@ export default function PaymentPage({
 }) {
   const [allSeats, setAllSeats] = useState(createSeats());
   const [selectedSeats, setSelectedSeats] = useState([]);
+  // ini jg bakal nyambung ke database
   const ticketPrice = 50000;
 
+  // ini jg
   const displayMovie = movie || {
     title: "TRON ARES (2025)",
     img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8tq8lygfqv4hEIDsAjS88Rdh-z99CusKQyg&s",
@@ -161,7 +163,7 @@ export default function PaymentPage({
             Pilih Kursi Anda
           </h2>
 
-          <div className="w-full h-10 bg-gray-300 rounded-md shadow-inner mb-6 flex items-center justify-center">
+          <div className="w-full h-10 bg-gray-300 rounded-md shadow-inner mb-20 flex items-center justify-center">
             <span className="text-lg font-semibold text-gray-600 tracking-widest">
               AREA LAYAR
             </span>

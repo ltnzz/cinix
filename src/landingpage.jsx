@@ -49,6 +49,7 @@ function HomePage({
   onNavigateSearch,
   onNavigateDetail,
 }) {
+  // ini nanti bakal nyambung ke database
   const originalMovies = [
     {
       title: "Stollen Girl",
@@ -130,14 +131,14 @@ function HomePage({
           className="text-7xl md:text-8xl font-bold tracking-widest"
           style={{ fontFamily: 'Arial, "Helvetica Neue", Helvetica, sans-serif' }}
         >
-          CINIX
+          Promo & Iklan
         </span>
         <Film size={64} className="text-yellow-300 rotate-12" />
       </div>
 
       <section className="py-10 px-6">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-semibold text-[#fff9e6]">
+          <h2 className="bg-amber-600 p-3 text-xl font-semibold text-[#fff9e6]">
             Sedang tayang di cinema!
           </h2>
           <Search

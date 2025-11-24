@@ -86,6 +86,8 @@ const FacebookIcon = (props) => (
   </svg>
 );
 
+
+// ada beberapa revisi terkait inputan di halaman signup ini
 export default function SignUpPage({ onNavigateHome, onNavigateLogin }) {
   const [showPassword, setShowPassword] = useState(false);
   const backgroundImageUrl = "https://i.imgur.com/Mvn8b2b.png";
