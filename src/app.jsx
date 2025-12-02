@@ -31,13 +31,13 @@ const BookingWrapper = ({ baseProps }) => {
   return <BookingPage {...baseProps} movie={movie} cinema={cinema} time={time} />;
 };
 
-const PaymentWrapper = ({ baseProps }) => {
-  const location = useLocation();
-  const { movie, cinema, time, seats, quantity } = location.state || {};
+// const PaymentWrapper = ({ baseProps }) => {
+//   const location = useLocation();
+//   const { movie, cinema, time, seats, quantity } = location.state || {};
   
-  if (!movie) return <Navigate to="/" replace />;
-  return <PaymentPage {...baseProps} movie={movie} cinema={cinema} time={time} seats={seats || []} quantity={quantity || 0} user={baseProps.user} />;
-};
+//   if (!movie) return <Navigate to="/" replace />;
+//   return <PaymentPage {...baseProps} movie={movie} cinema={cinema} time={time} seats={seats || []} quantity={quantity || 0} user={baseProps.user} />;
+// };
 
 function CinixRoutes() {
   const navigate = useNavigate();
@@ -83,7 +83,7 @@ function CinixRoutes() {
     onNavigateWishlist: () => navigate('/wishlist'),
     onNavigateDetail: (movie) => navigate(`/detail/${movie.id_movie}`, { state: { movie } }),
     onNavigateBooking: (movie, cinema, time) => {navigate('/booking', { state: { movie, cinema, time } }); },
-    onNavigatePayment: (movie, cinema, seats, quantity) => navigate('/payment', { state: { movie, cinema, time, seats, quantity } }),
+    // onNavigatePayment: (movie, cinema, seats, quantity) => navigate('/payment', { state: { movie, cinema, time, seats, quantity } }),
     user: currentUser,
     onLogoutClick: handleLogoutClick,
     onLoginSuccess: handleLoginSuccess
@@ -99,7 +99,7 @@ return (
         <Route path="/forgot-password" element={<ForgotPasswordPage {...navProps} />} />
         <Route path="/detail/:id_movie" element={<DetailWrapper baseProps={navProps} />} />
         <Route path="/booking" element={<BookingWrapper baseProps={navProps} />} />
-        <Route path="/payment" element={<PaymentWrapper baseProps={navProps} />} />
+        {/* <Route path="/payment" element={<PaymentWrapper baseProps={navProps} />} /> */}
         <Route path="/mytickets" element={<MyTicketsPage user={currentUser} />} />
         <Route path="/wishlist" element={<WishlistPage {...navProps} />} />
         <Route path="/cinema/:id" element={<CinemaDetailPage {...navProps} />} />
