@@ -4,61 +4,29 @@ import { MapPin, Star, ArrowLeft, Calendar, Clock } from "lucide-react";
 import DetailHeader from "../components/detMovieHeader"; 
 
 export default function CinemaDetailPage({ onNavigateHome, onNavigateLogin, onNavigateBooking }) {
-  const { id } = useParams(); 
-  const location = useLocation();
-  const navigate = useNavigate();
-  const cinema = location.state?.cinemaData || { 
-      name: "Unknown Cinema", 
-      brand: "XXI", 
-      city: "Unknown" 
-  };
+    const location = useLocation();
+    const navigate = useNavigate();
+    const cinema = location.state?.cinemaData;
 
-  const moviesPlaying = [
-    {
-       id: 101,
-       title: "TRON ARES",
-       poster_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8tq8lygfqv4hEIDsAjS88Rdh-z99CusKQyg&s",
-       rating: "4.8",
-       genre: "Sci-Fi, Action",
-       times: ["12:30", "14:45", "17:00", "19:15"]
-    },
-    {
-       id: 102,
-       title: "WICKED",
-       poster_url: "https://upload.wikimedia.org/wikipedia/en/b/b4/Wicked_%282024_film%29_poster.jpg",
-       rating: "4.5",
-       genre: "Fantasy, Musical",
-       times: ["13:00", "15:30", "18:00"]
-    },
-    {
-       id: 103,
-       title: "MOANA 2",
-       poster_url: "https://upload.wikimedia.org/wikipedia/en/7/73/Moana_2_poster.jpg",
-       rating: "4.7",
-       genre: "Animation, Adventure",
-       times: ["11:00", "13:00", "15:00"]
-    }
-  ];
+    const handleSelectTime = (movie, time) => {
+        navigate('/booking', {
+            state: {
+                movie: { 
+                    title: movie.title, 
+                    img: movie.poster_url, 
+                    poster_url: movie.poster_url 
+                },
+                cinema: cinema.name,
+                time: time
+            }
+        });
+    };
 
-  const handleSelectTime = (movie, time) => {
-      navigate('/booking', {
-          state: {
-              movie: { 
-                  title: movie.title, 
-                  img: movie.poster_url, 
-                  poster_url: movie.poster_url 
-              },
-              cinema: cinema.name,
-              time: time
-          }
-      });
-  };
-
-  return (
+return (
     <div className="min-h-screen bg-[#6a8e7f] font-sans">
-      <DetailHeader onNavigateHome={onNavigateHome} onNavigateLogin={onNavigateLogin} />
+        <DetailHeader onNavigateHome={onNavigateHome} onNavigateLogin={onNavigateLogin} />
 
-      <main className="max-w-5xl mx-auto px-6 py-8">
+        <main className="max-w-5xl mx-auto px-6 py-8">
         
         <div className="mb-8 animate-in slide-in-from-bottom-4 duration-500">
             <button 
@@ -149,7 +117,9 @@ export default function CinemaDetailPage({ onNavigateHome, onNavigateLogin, onNa
             ))}
         </div>
 
-      </main>
+        </main>
     </div>
-  );
+    
+
+);
 }

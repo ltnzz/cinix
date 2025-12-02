@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Home, ChevronLeft, Calendar } from "lucide-react";
+import { Home, ChevronLeft, Calendar, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-// --- 1. MOCK DATA GENERATOR (FIXED: STATIC DATA) ---
+// --- 1. MOCK DATA GENERATOR ---
 const generateMockData = () => {
   const rows = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"];
   
-  // DAFTAR KURSI YANG SUDAH TERISI (HARDCODED)
-  // Tambahkan atau kurangi ID kursi di sini sesuai keinginanmu.
-  // Data ini tidak akan berubah saat di-refresh.
+  // DAFTAR KURSI YANG SUDAH TERISI
   const soldSeats = [
       "A5", "A6", 
       "C3", "C4", 
@@ -23,8 +21,6 @@ const generateMockData = () => {
   rows.forEach(row => {
     for (let i = 1; i <= 12; i++) {
       const seatId = `${row}${i}`;
-      
-      // LOGIC BARU: Cuma cek array soldSeats. Hapus Math.random()
       const isTaken = soldSeats.includes(seatId);
 
       data.push({
@@ -84,6 +80,7 @@ export default function BookingPage({ movie, cinema, time }) {
   
   // State
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false); // State untuk loading saat bayar
   const [seatsData, setSeatsData] = useState([]); 
   const [selectedSeats, setSelectedSeats] = useState([]);
   
@@ -94,9 +91,8 @@ export default function BookingPage({ movie, cinema, time }) {
   };
   const ticketPrice = 50000;
 
-  // --- FETCH & PROCESS DATA ---
+  // --- FETCH & PROCESS SEAT DATA ---
   useEffect(() => {
-    // Simulasi loading 0.8 detik biar berasa kayak apps beneran
     const timer = setTimeout(() => {
       const apiResponse = generateMockData(); 
       const rawData = apiResponse.data;
@@ -111,12 +107,10 @@ export default function BookingPage({ movie, cinema, time }) {
         return acc;
       }, {});
 
-      // Sorting Angka
       Object.keys(grouped).forEach(row => {
         grouped[row].sort((a, b) => a._num - b._num);
       });
 
-      // Convert ke Array
       const processed = Object.keys(grouped).sort().map(row => ({
         rowLabel: row,
         seats: grouped[row]
@@ -142,16 +136,53 @@ export default function BookingPage({ movie, cinema, time }) {
     }
   };
 
-  const handleProceedToPayment = () => {
-    navigate('/payment', {
-      state: {
-        movie: displayMovie,
-        cinema: cinema || "AEON MALL XXI",
-        time: time || "14:30",
-        seats: selectedSeats,
-        totalPrice: selectedSeats.length * ticketPrice
+  // --- LOGIC PEMBAYARAN (API INTEGRATION) ---
+  const handleProceedToPayment = async () => {
+    if (selectedSeats.length === 0) return;
+
+    setIsSubmitting(true);
+    const totalAmount = selectedSeats.length * ticketPrice;
+
+    // Menyiapkan data body x-www-form-urlencoded
+    const formData = new URLSearchParams();
+    
+    // PERHATIAN: Ganti ID ini dengan data user/schedule yang real dari props atau context
+    formData.append("user_id", "0203acdc-31da-4f79-a3d8-804c9f2ef1e2"); 
+    formData.append("schedule_id", "02c0037c-3b6e-40f0-939a-b6ac42cd086e");
+    
+    // Menggabungkan kursi menjadi string dipisah koma (contoh: "A1,A2")
+    formData.append("seats", selectedSeats.join(",")); 
+    formData.append("amount", totalAmount.toString());
+
+    try {
+      const response = await fetch("https://cinix-be.vercel.app/payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: formData.toString()
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // SUKSES
+        console.log("Payment Success:", result);
+        alert(`Pembayaran Berhasil!\nSeats: ${selectedSeats.join(", ")}\nTotal: Rp ${totalAmount.toLocaleString()}`);
+        // Redirect atau reset state disini
+        navigate('/'); 
+      } else {
+        // GAGAL
+        console.error("Payment Failed:", result);
+        alert(`Pembayaran Gagal: ${result.message || "Terjadi kesalahan pada server."}`);
       }
-    });
+
+    } catch (error) {
+      console.error("Network Error:", error);
+      alert("Terjadi kesalahan jaringan. Silakan coba lagi.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -279,10 +310,17 @@ export default function BookingPage({ movie, cinema, time }) {
 
                 <button
                     onClick={handleProceedToPayment}
-                    disabled={selectedSeats.length === 0}
-                    className="w-full py-4 bg-[#2a4c44] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e3630] hover:shadow-xl hover:-translate-y-1 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0"
+                    disabled={selectedSeats.length === 0 || isSubmitting}
+                    className="w-full py-4 bg-[#2a4c44] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e3630] hover:shadow-xl hover:-translate-y-1 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0 flex items-center justify-center gap-2"
                 >
-                    Lanjut Pembayaran ({selectedSeats.length})
+                    {isSubmitting ? (
+                        <>
+                           <Loader2 className="animate-spin" size={20} />
+                           Memproses...
+                        </>
+                    ) : (
+                        `Lanjut Pembayaran (${selectedSeats.length})`
+                    )}
                 </button>
             </div>
         </div>

@@ -22,7 +22,6 @@ const DetailWrapper = ({ baseProps }) => {
 };
 
 const BookingWrapper = ({ baseProps }) => {
-  const { id_movie } = useParams();
   const location = useLocation();
   const { movie, cinema, time } = location.state || {};
   
