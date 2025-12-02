@@ -282,7 +282,7 @@ export default function BookingPage({ movie, cinema, time }) {
                         <h3 className="font-bold text-[#2a4c44] line-clamp-2 leading-tight mb-1">{displayMovie.title}</h3>
                         <p className="text-xs text-gray-500 font-medium mb-2">{cinema || "XXI Cinema"}</p>
                         <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-[10px] px-2 py-1 rounded-md font-bold">
-                             <Calendar size={12} /> {time || "14:30"} WIB
+                              <Calendar size={12} /> {time || "14:30"} WIB
                         </div>
                     </div>
                 </div>

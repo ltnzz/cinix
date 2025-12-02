@@ -1,17 +1,58 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import AuthHeader from "../components/AuthHeader";
-import FormInput from "../components/FormInput";
+import { Mail, Lock, Eye, EyeOff, Loader2, Film } from "lucide-react";
+import { useNavigate } from "react-router-dom"; 
 
-const GoogleIcon = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" /><path fill="#FF3D00" d="M6.306,14.691c2.661-5.223,7.85-8.64,13.694-8.64c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C30.046,0.053,25.268,0,20,0C8.955,0,0,8.955,0,20s8.955,20,20,20c3.059,0,5.842-1.154,7.961-3.039l5.657-5.657C30.046,33.947,25.268,36,20,36c-6.627,0-12-5.373-12-12c0-1.649,0.329-3.204,0.925-4.664L6.306,14.691z" /><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-6.19C29.211,35.637,26.714,36,24,36c-5.202,0-9.619-3.357-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z" /><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z" /></svg>
-);
-const FacebookIcon = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><path fill="#039be5" d="M24 4C12.95 4 4 12.95 4 24s8.95 20 20 20s20-8.95 20-20S35.05 4 24 4z" /><path fill="#fff" d="M26.706 36V24h4.167l.62-4.857h-4.787v-3.102c0-1.408.39-2.368 2.41-2.368l2.576 0V9.07c-.446-.06-1.975-.19-3.754-.19c-3.714 0-6.25 2.266-6.25 6.425v3.55h-4.177V24h4.177v12h4.99z" /></svg>
+// --- 1. KOMPONEN INTERNAL ---
+
+const AuthHeader = () => (
+  <header className="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-10">
+    <div className="flex items-center gap-2 text-white font-bold text-xl tracking-wider">
+      <div className="w-8 h-8 bg-[#2a4c44] rounded-lg flex items-center justify-center shadow-lg border border-white/20">
+        <Film size={18} className="text-white" />
+      </div>
+      <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400">
+        CINIX
+      </span>
+    </div>
+  </header>
 );
 
+const FormInput = ({ id, label, type, placeholder, value, onChange, icon: Icon, rightElement }) => (
+  <div className="mb-4">
+    <label htmlFor={id} className="block text-xs font-semibold text-gray-400 mb-1.5 ml-1">
+      {label}
+    </label>
+    <div className="relative group">
+      {Icon && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 group-focus-within:text-amber-400 transition-colors">
+          <Icon size={18} />
+        </div>
+      )}
+      <input
+        id={id}
+        type={type}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        className={`w-full bg-gray-800/50 border border-gray-600 text-white text-sm rounded-xl py-3 ${Icon ? "pl-10" : "pl-4"} ${rightElement ? "pr-12" : "pr-4"} focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all placeholder-gray-500`}
+      />
+      {rightElement && (
+        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+          {rightElement}
+        </div>
+      )}
+    </div>
+  </div>
+);
+
+// --- 2. ICONS ---
+const GoogleIcon = (props) => (<svg {...props} viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.1H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20c11 0 20-9 20-20 0-1.3-.1-2.7-.4-3.9z"/><path fill="#FF3D00" d="M6.3 14.7C9 9.5 14.1 6 20 6c3 0 5.8 1.2 8 3l5.7-5.7C30 0 25.3 0 20 0 9 0 0 9 0 20c0 1.6.3 3.2.9 4.7l5.4-10z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-6.2C29.2 35.6 26.7 36 24 36c-5.2 0-9.6-3.4-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.1H42V20H24v8h11.3c-1.7 4.7-6.1 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.2 8 3l5.7-5.7C34 6 29.3 4 24 4 13 4 4 13 4 24s9 20 20 20c11 0 20-9 20-20 0-1.3-.1-2.7-.4-3.9z"/></svg>);
+const FacebookIcon = (props) => (<svg {...props} viewBox="0 0 48 48"><path fill="#039be5" d="M24 4C13 4 4 13 4 24s9 20 20 20 20-9 20-20S35 4 24 4z"/><path fill="#fff" d="M26.7 36V24h4.2l.6-4.9h-4.8v-3.1c0-1.4.4-2.4 2.4-2.4l2.6 0V9.1c-.5-.1-2-.2-3.8-.2-3.7 0-6.3 2.3-6.3 6.4v3.6h-4.2V24h4.2v12h5z"/></svg>);
+
+// --- 3. HALAMAN LOGIN (FINAL FIX) ---
 export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword }) {
+  const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const backgroundImageUrl = "https://i.imgur.com/Mvn8b2b.png";
 
@@ -32,33 +73,48 @@ export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword
     setErrorMessage("");
 
     try {
-      const endpoint = "https://cinix-be.vercel.app/login";
-      const response = await axios.post(endpoint, formData, {
-        withCredentials: true,
-        headers: {
-        'Content-Type': 'application/json'
-        }
+      const endpoint = "https://cinix-be.vercel.app/login"; 
+      
+      // --- PERBAIKAN DI SINI ---
+      // Mengubah format JSON menjadi x-www-form-urlencoded
+      // Agar sesuai dengan format yang diminta backend (seperti endpoint payment sebelumnya)
+      const formBody = new URLSearchParams();
+      formBody.append('email', formData.email);
+      formBody.append('password', formData.password);
+
+      const response = await axios.post(endpoint, formBody, {
+        headers: { 
+          'Content-Type': 'application/x-www-form-urlencoded' // Header disesuaikan
+        },
+        withCredentials: true 
       });
 
-      if (response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      if (response.status === 200) {
+        // Ambil objek user dari backend
+        const backendUser = response.data.user || {};
         
-        let userData = response.data.user;
-        if (!userData) {
-            const fakeName = formData.email.split('@')[0];
-            userData = { name: fakeName, email: formData.email };
-        }
-        localStorage.setItem("user", JSON.stringify(userData));
+        // Logika penentuan nama user
+        const displayName = backendUser.name || backendUser.username || formData.email.split('@')[0];
+
+        // Simpan User Profile di LocalStorage
+        const userToSave = {
+            id: backendUser.id || response.data.user_id,
+            email: backendUser.email || formData.email,
+            name: displayName,
+            role: backendUser.role || 'user'
+        };
         
-        setUserName(userData.name);
+        localStorage.setItem("user", JSON.stringify(userToSave));
+        
+        setUserName(displayName);
         setLoginSuccess(true);
 
         setTimeout(() => {
-             window.location.href = "/"; 
-        }, 2000);
+             navigate('/'); 
+        }, 1500);
 
       } else {
-          setErrorMessage("Token tidak valid.");
+          setErrorMessage("Login gagal. Coba lagi.");
           setLoading(false);
       }
 
@@ -66,15 +122,17 @@ export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword
       console.error("Login Error:", error);
       if (error.response) {
         setErrorMessage(error.response.data.message || "Email atau password salah.");
+      } else if (error.request) {
+        setErrorMessage("Akses Login Gagal (CORS Error). Pastikan Backend sudah di-deploy dengan settingan yang benar.");
       } else {
-        setErrorMessage("Gagal terhubung ke server.");
+        setErrorMessage("Terjadi kesalahan aplikasi.");
       }
       setLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen font-sans">
       <AuthHeader />
 
       <main
@@ -94,7 +152,8 @@ export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword
               <p className="text-gray-300 text-sm">Selamat datang,</p>
               <p className="text-amber-300 font-semibold text-lg mt-1">{userName}</p>
               <div className="mt-8 flex items-center gap-2 text-xs text-gray-400">
-                 <span className="animate-pulse font-bold">MENGALIHKAN KE BERANDA...</span>
+                 <Loader2 className="animate-spin" size={16} />
+                 <span className="font-bold">MENGALIHKAN KE BERANDA...</span>
               </div>
             </div>
           )}
@@ -151,7 +210,11 @@ export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword
             </div>
 
             <button type="submit" disabled={loading || loginSuccess} className={`w-full font-bold py-3 rounded-xl transition-all shadow-lg ${loading ? "bg-[#1e3630] cursor-not-allowed text-gray-400" : "bg-[#2a4c44] hover:bg-[#3a6a5e] text-white hover:scale-[1.02]"}`}>
-              {loading ? "Memproses..." : "Login"}
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin" size={18} /> Memproses...
+                </span>
+              ) : "Login"}
             </button>
 
             <div className="flex items-center my-6">
