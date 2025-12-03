@@ -43,6 +43,11 @@ export default function HomePage({ onNavigateHome, onNavigateLogin, onNavigateSe
     };
 
     const fetchRecommendations = async () => {
+      if (!user) {
+        setRecommendations([]);
+        return;
+      }
+      
       try {
         const url = `${API_BASE_URL}/recommendations`;
         
@@ -205,7 +210,7 @@ export default function HomePage({ onNavigateHome, onNavigateLogin, onNavigateSe
             <div>
                 <h2 className="text-3xl md:text-4xl font-black text-[#fff9e6] tracking-tight drop-shadow-md">Rekomendasi Untukmu</h2>
                 <p className="text-[#dbece5] font-medium mt-1">
-                    {user ? `Pilihan spesial buat marathon ${user.name} hari ini!` : "Film pilihan terbaik minggu ini."}
+                    {user ? `Pilihan spesial buat nemenin ${user.name} minggu ini!` : "Film pilihan terbaik minggu ini."}
                 </p>
             </div>
         </div>
@@ -239,7 +244,7 @@ export default function HomePage({ onNavigateHome, onNavigateLogin, onNavigateSe
                 ))
             ) : (
                 <div className="col-span-full text-center py-10 text-white/50 bg-black/10 rounded-xl flex flex-col items-center gap-2">
-                    <p>Belum ada rekomendasi khusus saat ini.</p>
+                    <p>Belum ada rekomendasi untuk saat ini.</p>
                 </div>
             )}
         </div>
