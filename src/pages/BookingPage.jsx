@@ -48,10 +48,35 @@ const Header = ({ title, subtitle, onBack, onHome }) => (
   </header>
 );
 
+const getCurrentUserDetail = (props) => {
+    try {
+        const userFromProps = props.user || props.stateFromNav.user;
+        if (userFromProps && userFromProps.name && userFromProps.email) {
+            return userFromProps;
+        }
+
+        const userFromStorage = localStorage.getItem('user');
+        if (userFromStorage) {
+            const user = JSON.parse(userFromStorage);
+            return {
+                id: user.id_user || user.id || user.userId || user.email,
+                name: user.name || user.username || 'User',
+                email: user.email || 'user@example.com',
+            };
+        }
+    } catch (e) {
+        console.error("Error parsing user details:", e);
+    }
+    return { id: 'guest', name: 'Guest', email: 'guest@example.com' };
+};
+
+
 export default function BookingPage(props) {
   const navigate = useNavigate();
   const location = useLocation();
   const stateFromNav = location.state || {};
+
+  const userDetails = getCurrentUserDetail(props); 
 
   const movie = props.movie || stateFromNav.movie || { title: "Film", poster_url: "https://via.placeholder.com/300x450" };
   const cinema = props.cinema || stateFromNav.cinema || "XXI Cinema";
@@ -62,19 +87,7 @@ export default function BookingPage(props) {
   const scheduleId = props.scheduleId || stateFromNav.scheduleId; 
   const initialStudioId = props.studioId || stateFromNav.studioId;
   
-  let userId = props.userId || stateFromNav.userId;
-  
-  if (!userId) {
-    try {
-      const userFromStorage = localStorage.getItem('user');
-      if (userFromStorage) {
-        const user = JSON.parse(userFromStorage);
-        userId = user.id_user || user.id || user.userId || user.email; 
-      }
-    } catch (e) {
-      console.error("Gagal mengambil user dari storage:", e);
-    }
-  }
+  let userId = userDetails.id;
   
   const midtransClientKey = props.midtransClientKey || stateFromNav.midtransClientKey || "SB-Mid-client-a24K2aKsd8sdasd"; 
 
@@ -88,7 +101,7 @@ export default function BookingPage(props) {
 
   const ticketPrice = props.ticketPrice || 50000;
   const adminFee = 3000;  
-  const taxRate = 0.11;   
+  const taxRate = 0.11;  
   const maxSeats = props.maxSeats || 8;
 
   const subTotal = selectedSeats.length * ticketPrice;
@@ -171,7 +184,7 @@ export default function BookingPage(props) {
       } finally {
         setTimeout(() => {
             setIsLoading(false);
-        }, 800); 
+        }, 800);
       }
     };
 
@@ -217,6 +230,10 @@ export default function BookingPage(props) {
     params.append("schedule_id", scheduleId);
     params.append("seats", selectedSeats.join(","));
     params.append("amount", subTotal.toString());
+
+    params.append("user_id", userDetails.id);
+    params.append("user_name", userDetails.name);
+    params.append("user_email", userDetails.email);
 
     try {
       const res = await axios.post(`${API_BASE_URL}/payment`, params.toString(), {
