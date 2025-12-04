@@ -31,7 +31,7 @@ export default function FormInput({
       
       {rightElement && (
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
-           {rightElement}
+            {rightElement}
         </div>
       )}
     </div>

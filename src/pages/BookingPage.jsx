@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Home, ChevronLeft, Calendar, Loader2 } from "lucide-react";
-
-// TODO: Create axiosConfig.js file and import it here for better cookie handling
-// import axios from "../config/axiosConfig";
 import { useNavigate, useLocation } from "react-router-dom";
 
 // --- Seat component ---
@@ -58,37 +55,31 @@ export default function BookingPage(props) {
   // Props or navigation state fallback
   const movie = props.movie || stateFromNav.movie || { title: "TRON: ARES (2025)", poster_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8tq8lygfqv4hEIDsAjS88Rdh-z99CusKQyg&s" };
   const cinema = props.cinema || stateFromNav.cinema || "AEON MALL TANJUNG BARAT XXI";
+  
+  // TANGKAP TANGGAL & WAKTU DARI STATE
   const time = props.time || stateFromNav.time || "14:30";
-  const scheduleId = props.scheduleId || stateFromNav.scheduleId || "default-schedule-id"; // ✅ Fallback untuk testing
+  // Gunakan tanggal yang dipilih user, atau fallback ke hari ini jika null
+  const selectedDate = props.date || stateFromNav.date || new Date().toISOString(); 
+
+  const scheduleId = props.scheduleId || stateFromNav.scheduleId || "default-schedule-id"; 
   const studioId = props.studioId || stateFromNav.studioId || "6cf13e1f-105d-4cc9-b76e-6f4b6db93f61";
   
   // Get userId from props/state, or fetch from auth
   let userId = props.userId || stateFromNav.userId;
   
-  // If userId not in props/state, try to get from localStorage or cookies
   if (!userId) {
     try {
       const userFromStorage = localStorage.getItem('user');
       if (userFromStorage) {
         const user = JSON.parse(userFromStorage);
-        userId = user.id_user || user.id || user.userId;
+        userId = user.id_user || user.id || user.userId || user.email; 
       }
     } catch (e) {
       console.error("Failed to get user from storage:", e);
     }
   }
   
-  const midtransClientKey = props.midtransClientKey || stateFromNav.midtransClientKey || import.meta.env.VITE_MIDTRANS_CLIENT_KEY;
-
-  // Debug log
-  console.log("BookingPage Props:", {
-    scheduleId,
-    studioId,
-    userId,
-    cinema,
-    time,
-    movie
-  });
+  const midtransClientKey = props.midtransClientKey || stateFromNav.midtransClientKey || "SB-Mid-client-a24K2aKsd8sdasd"; 
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,15 +125,12 @@ export default function BookingPage(props) {
     const load = async () => {
       let currentStudioId = studioId;
 
-      // Kalau studioId ga ada, fetch dari schedule
       if (!currentStudioId && scheduleId) {
         try {
-          console.log("Fetching schedule to get studioId...");
           const scheduleRes = await axios.get(`https://cinix-be.vercel.app/schedules/${scheduleId}`, {
             withCredentials: true
           });
           currentStudioId = scheduleRes.data?.studio_id || scheduleRes.data?.data?.studio_id;
-          console.log("Studio ID from schedule:", currentStudioId);
         } catch (err) {
           console.error("Failed to fetch schedule:", err);
         }
@@ -169,18 +157,14 @@ export default function BookingPage(props) {
           return;
         }
 
-        console.log("Raw seats data:", raw); // Debug: cek struktur data
-
-        // Grouping per row
         const grouped = raw.reduce((acc, seat) => {
           const row = seat.seat_number.charAt(0);
           const num = parseInt(seat.seat_number.slice(1), 10);
           if (!acc[row]) acc[row] = [];
           
-          // Use seat_number as ID (API doesn't return id_seat)
           acc[row].push({ 
             ...seat, 
-            id_seat: seat.seat_number, // Use seat_number as unique ID
+            id_seat: seat.seat_number, 
             _num: num 
           });
           return acc;
@@ -205,11 +189,8 @@ export default function BookingPage(props) {
     load();
   }, [studioId]);
 
-  // Toggle seat selection (using id_seat)
+  // Toggle seat selection
   const toggleSeat = (seatId) => {
-    console.log("Toggling seat:", seatId); // Debug
-    console.log("Current selected seats:", selectedSeats); // Debug
-    
     if (selectedSeats.includes(seatId)) {
       setSelectedSeats(prev => prev.filter(s => s !== seatId));
       return;
@@ -221,7 +202,6 @@ export default function BookingPage(props) {
     setSelectedSeats(prev => [...prev, seatId]);
   };
 
-  // Get display seat numbers for summary
   const displaySeats = seatsData
     .flatMap(row => row.seats)
     .filter(seat => selectedSeats.includes(seat.id_seat))
@@ -233,31 +213,23 @@ export default function BookingPage(props) {
   const handleProceedToPayment = async () => {
     if (selectedSeats.length === 0) return;
     
-    console.log("Payment check:", { userId, scheduleId }); // Debug
-    
-    // Backend will get userId from JWT token, so scheduleId is enough
     if (!scheduleId) {
-      alert("Schedule tidak lengkap. Pastikan data schedule tersedia.");
+      alert("Schedule tidak lengkap.");
       return;
     }
 
     setIsSubmitting(true);
 
     const totalAmount = selectedSeats.length * ticketPrice;
-
     const params = new URLSearchParams();
     params.append("schedule_id", scheduleId);
     params.append("seats", selectedSeats.join(","));
     params.append("amount", totalAmount.toString());
 
     try {
-      console.log("Sending payment request...");
-      
       const res = await axios.post("https://cinix-be.vercel.app/payment", params.toString(), {
-        headers: { 
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        withCredentials: true // ✅ Cookie-only authentication
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        withCredentials: true 
       });
 
       const data = res.data || {};
@@ -266,45 +238,60 @@ export default function BookingPage(props) {
 
       if (token) {
         if (!window.snap) {
-          const waited = await new Promise((resolve) => {
-            let tries = 0;
-            const t = setInterval(() => {
-              tries++;
-              if (window.snap) {
-                clearInterval(t);
-                resolve(true);
-              }
-              if (tries > 20) {
-                clearInterval(t);
-                resolve(false);
-              }
-            }, 100);
-          });
-
-          if (!waited) {
-            alert("Gagal memuat Midtrans Snap. Silakan refresh halaman.");
-            setIsSubmitting(false);
-            return;
-          }
+          alert("Gagal memuat Midtrans Snap. Silakan refresh halaman.");
+          setIsSubmitting(false);
+          return;
         }
 
         window.snap.pay(token, {
           onSuccess: function(result){
             console.log("Midtrans success", result);
-            alert("Pembayaran sukses. Terima kasih.");
-            navigate("/");
+            
+            try {
+                const storageUserId = userId || "guest_user"; 
+                const storageKey = `tickets_${storageUserId}`;
+                
+                const newTicket = {
+                    id: Date.now(), 
+                    movie_title: movie.title,
+                    movie_poster: movie.poster_url,
+                    cinema_name: cinema,
+                    showtime: time,
+                    watch_date: selectedDate, 
+                    booking_date: new Date().toISOString(),
+                    seats: selectedSeats, 
+                    quantity: selectedSeats.length,
+                    total_amount: totalAmount,
+                    status: "Lunas",
+                    transaction_id: result.transaction_id || result.order_id
+                };
+
+                const existingTickets = JSON.parse(localStorage.getItem(storageKey) || "[]");
+                const updatedTickets = [newTicket, ...existingTickets];
+                
+                localStorage.setItem(storageKey, JSON.stringify(updatedTickets));
+                console.log(`Tiket berhasil disimpan ke ${storageKey}`);
+
+            } catch (err) {
+                console.error("Gagal menyimpan tiket lokal:", err);
+            }
+
+            alert("Pembayaran sukses! Tiket Anda telah diterbitkan.");
+            
+            navigate("/mytickets"); 
           },
           onPending: function(result){
             console.log("Midtrans pending", result);
-            alert("Pembayaran pending. Cek riwayat pembayaran.");
-            navigate("/");
+            alert("Pembayaran pending. Silakan selesaikan pembayaran Anda.");
+            navigate("/"); 
           },
           onError: function(result){
             console.error("Midtrans error", result);
             alert("Terjadi kesalahan pembayaran. Silakan coba lagi.");
+            setIsSubmitting(false);
           },
           onClose: function(){
-            console.log("Midtrans popup closed by user");
+            console.log("Midtrans popup closed");
             setIsSubmitting(false);
           }
         });
@@ -312,8 +299,7 @@ export default function BookingPage(props) {
       } else if (redirectUrl) {
         window.location.href = redirectUrl;
       } else {
-        console.error("Unexpected payment response:", data);
-        alert("Response pembayaran tidak valid dari server.");
+        alert("Response pembayaran tidak valid.");
         setIsSubmitting(false);
       }
 
@@ -407,6 +393,9 @@ export default function BookingPage(props) {
                 <p className="text-xs text-gray-500 font-medium mb-2">{cinema || "XXI Cinema"}</p>
                 <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-[10px] px-2 py-1 rounded-md font-bold">
                   <Calendar size={12} /> {time || "14:30"} WIB
+                </div>
+                <div className="mt-1 text-xs text-gray-500 font-medium">
+                    {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                 </div>
               </div>
             </div>

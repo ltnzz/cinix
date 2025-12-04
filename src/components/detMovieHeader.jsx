@@ -2,7 +2,7 @@ import React from "react";
 import { Home, Ticket, Heart, User, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-export default function DetailHeader({ onNavigateHome, onNavigateLogin }) {
+export default function DetailHeader() {
   const navigate = useNavigate();
 
   return (
@@ -32,16 +32,12 @@ export default function DetailHeader({ onNavigateHome, onNavigateLogin }) {
           <Ticket size={20} />
           <span className="hidden md:inline">Tickets</span>
         </button>
-        <button className="flex items-center gap-2 hover:text-amber-600 transition-colors">
+        <button 
+            onClick={() => navigate('/wishlist')}
+            className="flex items-center gap-2 hover:text-amber-600 transition-colors"
+        >
           <Heart size={20} />
           <span className="hidden md:inline">Wishlist</span>
-        </button>
-        <button
-          onClick={onNavigateLogin}
-          className="flex items-center gap-2 hover:text-amber-600 transition-colors"
-        >
-          <User size={20} />
-          <span className="hidden md:inline">Profile</span>
         </button>
       </div>
     </header>

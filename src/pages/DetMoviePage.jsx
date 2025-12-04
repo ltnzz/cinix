@@ -1,26 +1,53 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Filter, Search, PlayCircle, Lock, X, Heart } from "lucide-react";
+import { Clock, Filter, Search, PlayCircle, Lock, X, Heart, ChevronLeft, Share2, User } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "axios"; 
 
-import DetailHeader from "../components/detMovieHeader";
+const DetailHeader = ({ onNavigateHome, onNavigateLogin, user }) => (
+  <header className="bg-[#f5f1dc] text-[#2a4c44] p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
+    <button 
+      onClick={onNavigateHome} 
+      className="flex items-center gap-2 text-[#2a4c44] hover:bg-black/5 transition-colors px-2 py-1 rounded-lg active:scale-95"
+    >
+      <ChevronLeft size={24} />
+      <span className="font-bold text-sm hidden md:inline">Kembali</span>
+    </button>
 
-// --- HELPER: Format Durasi ---
+    <div className="flex items-center gap-4">
+        {!user ? (
+            <button 
+                onClick={onNavigateLogin}
+                className="bg-[#2a4c44] text-[#f5f1dc] px-4 py-1.5 rounded-full font-bold text-sm hover:shadow-lg hover:bg-[#3a6a5e] active:scale-95 transition shadow-lg"
+            >
+                Masuk
+            </button>
+        ) : (
+            <div className="flex items-center gap-2 bg-black/20 pl-2 pr-3 py-1.5 rounded-full border border-white/5">
+              <div className="w-7 h-7 bg-[#2a4c44] text-[#f5f1dc] rounded-full flex items-center justify-center text-xs font-bold">
+                  {user.name ? user.name.charAt(0).toUpperCase() : <User size={14} />}
+              </div>
+              <span className="text-xs font-medium max-w-[100px] truncate hidden sm:block">
+                  {user.name || "Pengguna"}
+              </span>
+            </div>
+        )}
+    </div>
+  </header>
+);
+
 const formatDuration = (minutes) => {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
   return `${h}h ${m}m`;
 };
 
-// --- HELPER: Deteksi Kota dari Nama Bioskop ---
 const detectCity = (theaterName) => {
   const name = theaterName.toUpperCase();
   if (name.includes("BANDUNG")) return "BANDUNG";
   if (name.includes("SURABAYA")) return "SURABAYA";
-  return "JAKARTA"; // Default ke JAKARTA jika tidak ada nama kota lain
+  return "JAKARTA";
 };
 
-// --- HELPER: Generate 7 Hari ke Depan ---
 const getNext7Days = () => {
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THR', 'FRI', 'SAT'];
   const dates = [];
@@ -30,13 +57,12 @@ const getNext7Days = () => {
     dates.push({
       day: days[d.getDay()],
       date: d.getDate().toString().padStart(2, '0'),
-      fullDateStr: d.toISOString().split('T')[0]
+      fullDateStr: d.toISOString().split('T')[0] 
     });
   }
   return dates;
 };
 
-// --- COMPONENTS ---
 const DateChip = ({ day, date, isActive, onClick }) => (
   <button
     onClick={onClick}
@@ -64,33 +90,26 @@ const CityChip = ({ city, isActive, onClick }) => (
   </button>
 );
 
-// --- MAIN COMPONENT ---
 export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigateBooking, user }) {
   const navigate = useNavigate();
   const { id_movie } = useParams();
 
-  // STATE UTAMA
   const [movie, setMovie] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // STATE DATA JADWAL (Structure: { "JAKARTA": { "CGV A": [...] } })
   const [citiesData, setCitiesData] = useState({});
   const [availableCities, setAvailableCities] = useState([]);
   
-  // STATE UI
   const [activeTab, setActiveTab] = useState("jadwal");
   
-  // Date Logic (Visual Only for now)
   const [dates] = useState(getNext7Days());
   const [activeDate, setActiveDate] = useState(dates[0].fullDateStr);
   
-  // City Logic
   const [activeCity, setActiveCity] = useState("");
   
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
-  // 1. FETCH DATA & PROCESS
   useEffect(() => {
     const fetchMovie = async () => {
       try {
@@ -101,9 +120,8 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
         const data = response.data.movie;
         setMovie(data);
 
-        // --- LOGIC GROUPING BARU (KOTA -> BIOSKOP -> JADWAL) ---
         const processedData = {};
-        const foundCities = new Set(); // Set biar unik (gak ada duplikat nama kota)
+        const foundCities = new Set();
 
         const jadwalList = data.schedules || [];
 
@@ -111,52 +129,42 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
             const theaterName = schedule.theater?.name || "Unknown Theater";
             const studioName = schedule.studio?.name || "Regular";
             
-            // 1. Deteksi Kota
             const cityName = detectCity(theaterName);
             foundCities.add(cityName);
 
-            // 2. Buat Wadah Kota jika belum ada
             if (!processedData[cityName]) {
                 processedData[cityName] = {};
             }
 
-            // 3. Buat Wadah Theater jika belum ada
             if (!processedData[cityName][theaterName]) {
                 processedData[cityName][theaterName] = {
-                    brand: "Cinema XXI", // Bisa diganti logic logo nanti
+                    brand: "Cinema XXI",
                     schedules: []
                 };
             }
 
-            // 4. Masukkan Jadwal
             processedData[cityName][theaterName].schedules.push({
                 id_schedule: schedule.id_schedule,
-                // Format Jam: 14:30
                 time: new Date(schedule.show_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 price: schedule.price,
                 studio: studioName,
             });
         });
 
-        // Urutkan jam tayang biar rapi
         Object.keys(processedData).forEach(city => {
             Object.keys(processedData[city]).forEach(theater => {
                 processedData[city][theater].schedules.sort((a, b) => a.time.localeCompare(b.time));
             });
         });
 
-        // Update State
         setCitiesData(processedData);
         
-        // Convert Set ke Array untuk tombol filter
         const cityList = Array.from(foundCities);
         setAvailableCities(cityList);
 
-        // Set default kota aktif (ambil yang pertama ketemu)
         if (cityList.length > 0 && !activeCity) {
             setActiveCity(cityList[0]);
         }
-
       } catch (error) {
         console.error("Error fetching movie:", error);
       } finally {
@@ -167,7 +175,6 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
     if (id_movie) fetchMovie();
   }, [id_movie]);
 
-  // --- LOGIC HANDLERS ---
   const handleBook = (theaterName, schedule) => {
     if (!user) {
       setShowLoginModal(true);
@@ -177,30 +184,29 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
     navigate("/booking", {
       state: {
         movie,
-        theater: theaterName,
+        cinema: theaterName,
         time: schedule.time,
+        date: activeDate,  
         scheduleId: schedule.id_schedule,
         studioId: schedule.studio?.id_studio || schedule.id_studio || schedule.studio?.id,
         ticketPrice: schedule.price,
       }
     });
   };
-  // console.log(studioId);
-  // console.log(studioId.studio);
 
   const handleToggleWishlist = () => setIsWishlisted(!isWishlisted);
 
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#6a8e7f] text-white animate-pulse">Loading Movie Data...</div>;
   if (!movie) return <div className="min-h-screen flex items-center justify-center bg-[#6a8e7f] text-white">Movie Not Found</div>;
 
-  return (
+return (
     <div className="min-h-screen bg-[#6a8e7f] relative">
       <DetailHeader
         onNavigateHome={onNavigateHome}
         onNavigateLogin={onNavigateLogin}
+        user={user}
       />
 
-      {/* --- MODAL LOGIN --- */}
       {showLoginModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white rounded-2xl p-6 w-80 shadow-2xl relative animate-in zoom-in-95 duration-200 text-center mx-4">
@@ -219,11 +225,9 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
         </div>
       )}
 
-      {/* --- KONTEN UTAMA --- */}
       <main className="px-6 md:px-10 py-10 text-[#f5f1dc]">
         <div className="max-w-5xl mx-auto">
           
-          {/* INFO MOVIE SECTION */}
           <div className="flex flex-col md:flex-row gap-8 items-start relative">
             <div className="relative w-full md:w-64 aspect-[2/3] flex-shrink-0">
                 <img
@@ -259,7 +263,6 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
             </div>
           </div>
 
-          {/* TABS & JADWAL */}
           <div className="mt-12">
             <div className="flex gap-8 border-b-2 border-white/20">
               {["jadwal", "detail"].map((tab) => (
@@ -275,10 +278,8 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
               ))}
             </div>
 
-            {/* TAB: JADWAL */}
             {activeTab === "jadwal" && (
               <div className="py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                {/* DATE CHIPS */}
                 <div className="flex gap-3 overflow-x-auto py-2 pb-4 scrollbar-hide">
                   {dates.map((d) => (
                     <DateChip
@@ -291,7 +292,6 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                   ))}
                 </div>
 
-                {/* FILTER TOOLBAR */}
                 <div className="flex items-center gap-4 my-6 bg-[#2a4c44]/30 p-3 rounded-xl backdrop-blur-sm border border-white/5">
                   <button className="p-2 rounded-lg bg-[#2a4c44] hover:bg-[#3a6a5e] text-white transition"><Filter size={20} /></button>
                   <div className="text-white font-bold px-2">Filter Bioskop</div>
@@ -299,7 +299,6 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                   <button className="p-2 rounded-lg bg-[#2a4c44] hover:bg-[#3a6a5e] text-white transition"><Search size={20} /></button>
                 </div>
 
-                {/* CITY CHIPS (DYNAMIC) */}
                 <div className="flex flex-wrap gap-2 mb-8">
                   {availableCities.length === 0 ? (
                       <span className="text-white/50 text-sm px-2">Tidak ada kota tersedia</span>
@@ -315,9 +314,7 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                   )}
                 </div>
 
-                {/* LIST BIOSKOP & JAM TAYANG (NESTED LOOP) */}
                 <div className="flex flex-col gap-4">
-                    {/* Cek apakah ada data untuk kota yang aktif? */}
                     {!citiesData[activeCity] ? (
                         <div className="text-center py-10 bg-white/5 rounded-xl border border-white/10">
                             <p className="text-xl font-bold opacity-70">
@@ -325,7 +322,6 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                             </p>
                         </div>
                     ) : (
-                        // Render Bioskop di dalam Kota Terpilih
                         Object.entries(citiesData[activeCity]).map(([theaterName, data]) => (
                             <div key={theaterName} className="bg-[#f5f1dc] rounded-2xl p-6 shadow-xl text-[#2d3e50] animate-in zoom-in-95 duration-300">
                                 <div className="mb-4 border-b border-gray-300 pb-2">
@@ -346,12 +342,10 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                                         >
                                             <span className="text-lg">{schedule.time}</span>
                                             
-                                            {/* Studio Name (Small) */}
                                             <span className="text-[10px] font-medium opacity-60 group-hover:text-amber-300 uppercase mt-1">
                                                 {schedule.studio}
                                             </span>
 
-                                            {/* Tooltip Harga */}
                                             <span className="absolute -top-8 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
                                                 Rp {schedule.price.toLocaleString()}
                                             </span>
@@ -362,11 +356,8 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                         ))
                     )}
                 </div>
-
               </div>
             )}
-
-            {/* TAB: DETAIL */}
             {activeTab === "detail" && (
               <div className="py-8 text-lg leading-relaxed text-white/80 animate-in fade-in duration-300">
                 <p>{movie.description || "Tidak ada deskripsi tersedia untuk film ini."}</p>

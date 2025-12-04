@@ -33,11 +33,11 @@ const WishlistItem = ({ movie, onRemove, onBook }) => (
     </div>
 
     <div className="w-full md:w-48 h-64 md:h-40 bg-gray-200 shrink-0 overflow-hidden shadow-md">
-       <img 
+      <img 
           src={movie.poster_url} 
           alt={movie.title} 
           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-       />
+      />
     </div>
   </div>
 );
@@ -66,11 +66,6 @@ export default function WishlistPage({ onNavigateHome, onNavigateLogin, onNaviga
   const navigate = useNavigate();
   
   const [wishlistItems, setWishlistItems] = useState([]); 
-
-  const dummyData = [
-    { id: 1, title: "TRON ARES (2025)", genres: "Sci-fi, Action", duration: "2h 10m", poster_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8tq8lygfqv4hEIDsAjS88Rdh-z99CusKQyg&s" },
-    { id: 2, title: "WICKED", genres: "Fantasy, Musical", duration: "2h 40m", poster_url: "https://upload.wikimedia.org/wikipedia/en/b/b4/Wicked_%282024_film%29_poster.jpg" },
-  ];
 
   const handleRemove = (id) => {
     setWishlistItems(items => items.filter(item => item.id !== id));

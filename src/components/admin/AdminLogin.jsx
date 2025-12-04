@@ -1,15 +1,25 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { isAdminAuthenticated, setAdminAuth } from "../../utils/auth";
+import img from "../../assets/img/image.png"
 
 const API_BASE_URL = "https://cinix-be.vercel.app"; 
 
-export default function AdminLogin({ onLoginSuccess }) {
+export default function AdminLogin() {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({ 
     email: "admin@cinix.com", 
     password: "admin123" 
   });
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if(isAdminAuthenticated()) {
+      navigate('/admin');
+    }
+  }, [navigate])
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -20,29 +30,16 @@ export default function AdminLogin({ onLoginSuccess }) {
       params.append('email', formData.email.trim());
       params.append('password', formData.password.trim());
 
-      console.log("Login Request ke:", `${API_BASE_URL}/admin/login`);
-
       const response = await axios.post(`${API_BASE_URL}/admin/login`, params, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         withCredentials: true 
       });
       
-      console.log("RESPONSE LOGIN:", response.data);
-      let token = response.data.token;
+      const token = response.data.token || response.data.data?.token;
       
-      if (!token && response.data.data && response.data.data.token) {
-          token = response.data.data.token;
-      }
+      setAdminAuth(token);
 
-      if (token) {
-          localStorage.setItem("admin_token", token);
-          localStorage.setItem("admin_auth", "true");
-          onLoginSuccess();
-      } else {
-          console.warn("Waduh, Backend gak ngirim token di Body. Berdoa semoga Cookie masuk.");
-          localStorage.setItem("admin_auth", "true");
-          onLoginSuccess();
-      }
+      navigate('/admin');
 
     } catch (error) {
       console.error("Login Gagal:", error);
@@ -54,11 +51,11 @@ export default function AdminLogin({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#2a4c44]">
+    <div className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${img})`}}>
       <div className="bg-[#f5f1dc] p-8 rounded-3xl shadow-2xl w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-black text-[#2a4c44]">CINIX ADMIN</h1>
-          <p className="text-gray-600">Portal Manajemen Bioskop</p>
+          <p className="text-gray-600">Ini adalah wilayah kekuasaan Atmin</p>
         </div>
         <form onSubmit={handleLogin} className="space-y-6">
           <div>

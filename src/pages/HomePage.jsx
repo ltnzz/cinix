@@ -50,15 +50,11 @@ export default function HomePage({ onNavigateHome, onNavigateLogin, onNavigateSe
       
       try {
         const url = `${API_BASE_URL}/recommendations`;
-        
         const config = {
             withCredentials: true,
         };
-
         const res = await axios.get(url, config);
-        
         const data = res.data.recommendations || res.data.data || res.data;
-
         if (Array.isArray(data)) {
           setRecommendations(data);
         } else {

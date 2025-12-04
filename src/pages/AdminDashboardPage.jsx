@@ -36,11 +36,13 @@ export default function AdminDashboardPage() {
   }, [isAdmin, refreshKey]);
 
   const handleLogout = () => {
+    if (!window.confirm("Apakah Anda yakin ingin logout?")) return;
+    
     axios.post(`${API_BASE_URL}/admin/logout`, {}, { withCredentials: true }).catch(()=>{});
     
     localStorage.removeItem("admin_auth");
     setIsAdmin(false);
-    navigate('/');
+    navigate('/admin/login');
   };
 
   const handleDelete = async (id) => {
@@ -68,7 +70,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#f5f1dc] flex font-sans">
-      <aside className="w-64 bg-[#2a4c44] text-white flex flex-col fixed h-full z-10">
+      <aside className="w-64 bg-[#2a4c44] text-white flex flex-col sticky h-full z-10 min-h-screen">
         <div className="p-6 border-b border-white/10">
           <h1 className="text-2xl font-black tracking-wider">CINIX <span className="text-amber-400 text-xs">ADMIN</span></h1>
         </div>
@@ -76,7 +78,7 @@ export default function AdminDashboardPage() {
         <div className="p-4 border-t border-white/10"><button onClick={handleLogout} className="w-full flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-red-500/20 text-red-300 hover:text-red-100 transition-all"><LogOut size={20} /> Logout</button></div>
       </aside>
 
-      <main className="flex-1 ml-64 p-8">
+      <main className="flex-1 p-8">
         <div className="flex justify-between items-center mb-8">
           <div><h2 className="text-3xl font-bold text-[#2a4c44]">Daftar Film</h2><p className="text-gray-500">Kelola database film Cinix di sini.</p></div>
           <button onClick={handleAdd} className="flex items-center gap-2 bg-[#2a4c44] text-white px-6 py-3 rounded-full font-bold hover:bg-[#1e3630] shadow-lg hover:shadow-xl transition-all active:scale-95"><Plus size={20} /> Tambah Film</button>
