@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Clock, Filter, Search, PlayCircle, Lock, X, Heart, ChevronLeft, Share2, User } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Clock, Filter, Search, PlayCircle, Lock, X, Heart, ChevronLeft, Share2, User, Film } from "lucide-react"; 
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios"; 
 
 const DetailHeader = ({ onNavigateHome, onNavigateLogin, user }) => (
@@ -93,8 +93,9 @@ const CityChip = ({ city, isActive, onClick }) => (
 export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigateBooking, user }) {
   const navigate = useNavigate();
   const { id_movie } = useParams();
+  const location = useLocation(); 
 
-  const [movie, setMovie] = useState(null);
+  const [movie, setMovie] = useState(location.state?.movie || null);
   const [loading, setLoading] = useState(true);
 
   const [citiesData, setCitiesData] = useState({});
@@ -116,31 +117,22 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
         const response = await axios.get(`https://cinix-be.vercel.app/movies/${id_movie}`, 
           { withCredentials: true }
         );
-        console.log("API Response:", response.data);
         const data = response.data.movie;
         setMovie(data);
 
         const processedData = {};
         const foundCities = new Set();
-
         const jadwalList = data.schedules || [];
 
         jadwalList.forEach(schedule => {
             const theaterName = schedule.theater?.name || "Unknown Theater";
             const studioName = schedule.studio?.name || "Regular";
-            
             const cityName = detectCity(theaterName);
             foundCities.add(cityName);
 
-            if (!processedData[cityName]) {
-                processedData[cityName] = {};
-            }
-
+            if (!processedData[cityName]) processedData[cityName] = {};
             if (!processedData[cityName][theaterName]) {
-                processedData[cityName][theaterName] = {
-                    brand: "Cinema XXI",
-                    schedules: []
-                };
+                processedData[cityName][theaterName] = { brand: "Cinema XXI", schedules: [] };
             }
 
             processedData[cityName][theaterName].schedules.push({
@@ -148,6 +140,7 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                 time: new Date(schedule.show_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 price: schedule.price,
                 studio: studioName,
+                id_studio: schedule.studio?.id_studio || schedule.id_studio
             });
         });
 
@@ -158,22 +151,76 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
         });
 
         setCitiesData(processedData);
-        
         const cityList = Array.from(foundCities);
         setAvailableCities(cityList);
+        if (cityList.length > 0 && !activeCity) setActiveCity(cityList[0]);
 
-        if (cityList.length > 0 && !activeCity) {
-            setActiveCity(cityList[0]);
-        }
       } catch (error) {
         console.error("Error fetching movie:", error);
       } finally {
-        setLoading(false);
+        setTimeout(() => {
+            setLoading(false);
+        }, 800);
       }
     };
 
     if (id_movie) fetchMovie();
   }, [id_movie]);
+
+  useEffect(() => {
+    if (user && id_movie) {
+        const wishlistKey = `wishlist_${user.email || user.uid || user.id}`;
+        const storedWishlist = localStorage.getItem(wishlistKey);
+        
+        if (storedWishlist) {
+            const wishlist = JSON.parse(storedWishlist);
+            const found = wishlist.some(item => item.id == id_movie);
+            setIsWishlisted(found);
+        }
+    }
+  }, [user, id_movie]);
+
+  const handleToggleWishlist = () => {
+    if (!user) {
+        setShowLoginModal(true);
+        return;
+    }
+
+    const wishlistKey = `wishlist_${user.email || user.uid || user.id}`;
+    let currentWishlist = [];
+    const storedData = localStorage.getItem(wishlistKey);
+    
+    if (storedData) {
+        currentWishlist = JSON.parse(storedData);
+    }
+
+    if (isWishlisted) {
+        const updatedWishlist = currentWishlist.filter(item => item.id != (movie.id || id_movie));
+        localStorage.setItem(wishlistKey, JSON.stringify(updatedWishlist));
+        setIsWishlisted(false);
+    } else {
+        let finalDate = movie.release_date || movie.date;
+        if (!finalDate && movie.schedules && movie.schedules.length > 0) {
+            finalDate = movie.schedules[0].show_time;
+        }
+        if (!finalDate) {
+            finalDate = new Date().toISOString();
+        }
+
+        const movieDataToSave = {
+            id: movie.id || id_movie,
+            title: movie.title,
+            poster_path: movie.poster_url || movie.poster_path, 
+            release_date: finalDate, 
+            vote_average: movie.age_rating
+        };
+
+        currentWishlist.push(movieDataToSave);
+        localStorage.setItem(wishlistKey, JSON.stringify(currentWishlist));
+        setIsWishlisted(true);
+    }
+  };
+
 
   const handleBook = (theaterName, schedule) => {
     if (!user) {
@@ -188,19 +235,32 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
         time: schedule.time,
         date: activeDate,  
         scheduleId: schedule.id_schedule,
-        studioId: schedule.studio?.id_studio || schedule.id_studio || schedule.studio?.id,
+        studioId: schedule.id_studio, 
         ticketPrice: schedule.price,
       }
     });
   };
 
-  const handleToggleWishlist = () => setIsWishlisted(!isWishlisted);
+  if (loading) {
+    return (
+        <div className="min-h-screen bg-[#6a8e7f] flex flex-col items-center justify-center gap-4">
+            <div className="relative">
+                <div className="w-16 h-16 border-4 border-[#fff9e6]/30 border-t-[#fff9e6] rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Film size={20} className="text-[#fff9e6] opacity-80" />
+                </div>
+            </div>
+            <p className="text-[#fff9e6] font-bold text-lg animate-pulse tracking-wide">
+                Memuat Detail Film...
+            </p>
+        </div>
+    );
+  }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-[#6a8e7f] text-white animate-pulse">Loading Movie Data...</div>;
   if (!movie) return <div className="min-h-screen flex items-center justify-center bg-[#6a8e7f] text-white">Movie Not Found</div>;
 
-return (
-    <div className="min-h-screen bg-[#6a8e7f] relative">
+  return (
+    <div className="min-h-screen bg-[#6a8e7f] relative animate-in fade-in duration-500">
       <DetailHeader
         onNavigateHome={onNavigateHome}
         onNavigateLogin={onNavigateLogin}
@@ -217,7 +277,7 @@ return (
               <Lock className="text-red-500 w-8 h-8" />
             </div>
             <h3 className="text-xl font-bold text-[#2a4c44] mb-2">Akses Dibatasi</h3>
-            <p className="text-gray-500 text-sm mb-6 leading-relaxed">Login dulu buat pesen tiket ya!</p>
+            <p className="text-gray-500 text-sm mb-6 leading-relaxed">Login dulu untuk simpan wishlist atau pesan tiket!</p>
             <div className="flex flex-col gap-3">
               <button onClick={onNavigateLogin} className="w-full bg-[#2a4c44] text-white py-2.5 rounded-lg font-bold hover:bg-[#1e3630] transition shadow-lg">Login Sekarang</button>
             </div>
@@ -228,7 +288,7 @@ return (
       <main className="px-6 md:px-10 py-10 text-[#f5f1dc]">
         <div className="max-w-5xl mx-auto">
           
-          <div className="flex flex-col md:flex-row gap-8 items-start relative">
+          <div className="flex flex-col md:flex-row gap-8 items-start relative animate-in slide-in-from-bottom-8 duration-700">
             <div className="relative w-full md:w-64 aspect-[2/3] flex-shrink-0">
                 <img
                   src={movie.poster_url}
@@ -236,11 +296,16 @@ return (
                   className="w-full h-full object-cover rounded-xl shadow-2xl border-2 border-white/10"
                   onError={(e) => {e.target.onerror = null; e.target.src = "https://via.placeholder.com/300x450?text=No+Image";}}
                 />
+                
                 <button
                     onClick={handleToggleWishlist}
                     className="absolute top-3 right-3 p-3 bg-white/20 backdrop-blur-md rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 border border-white/30 group"
+                    title={isWishlisted ? "Hapus dari Wishlist" : "Simpan ke Wishlist"}
                 >
-                    <Heart size={24} className={`transition-all duration-300 ${isWishlisted ? "fill-red-500 text-red-500" : "text-white group-hover:text-red-300"}`} />
+                    <Heart 
+                        size={24} 
+                        className={`transition-all duration-300 ${isWishlisted ? "fill-red-500 text-red-500" : "text-white group-hover:text-red-300"}`} 
+                    />
                 </button>
             </div>
 
@@ -263,7 +328,7 @@ return (
             </div>
           </div>
 
-          <div className="mt-12">
+          <div className="mt-12 animate-in fade-in delay-200 duration-700">
             <div className="flex gap-8 border-b-2 border-white/20">
               {["jadwal", "detail"].map((tab) => (
                 <button

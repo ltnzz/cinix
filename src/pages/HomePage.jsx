@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Search, Star, PlayCircle, Clock, Calendar, ArrowLeft, ArrowRight, Sparkles } from "lucide-react";
+import { Search, Star, PlayCircle, Clock, Calendar, ArrowLeft, ArrowRight, Sparkles, Film } from "lucide-react";
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, Navigation, EffectFade } from 'swiper/modules';
 import 'swiper/css';
@@ -69,24 +69,33 @@ export default function HomePage({ onNavigateHome, onNavigateLogin, onNavigateSe
     setLoading(true);
 
     Promise.allSettled([fetchMovies(), fetchRecommendations()]).then(() => {
-      setLoading(false);
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000); 
     });
 
   }, [user]); 
 
   const moviesForSwiper = movies.length > 0 && movies.length < 8 ? [...movies, ...movies, ...movies] : movies;
 
-  if (loading && movies.length === 0) {
-      return (
-        <div className="min-h-screen bg-[#6a8e7f] flex items-center justify-center text-white animate-pulse font-bold text-xl flex-col gap-2">
-            <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
-            Loading Cinema...
+  if (loading) {
+    return (
+        <div className="min-h-screen bg-[#6a8e7f] flex flex-col items-center justify-center gap-4">
+            <div className="relative">
+                <div className="w-16 h-16 border-4 border-[#fff9e6]/30 border-t-[#fff9e6] rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Film size={20} className="text-[#fff9e6] opacity-80" />
+                </div>
+            </div>
+            <p className="text-[#fff9e6] font-bold text-lg animate-pulse tracking-wide">
+                Sedang Memuat Bioskop...
+            </p>
         </div>
-      );
+    );
   }
 
   return (
-    <div className="min-h-screen bg-[#6a8e7f] text-gray-900 font-sans selection:bg-amber-500 selection:text-black">
+    <div className="min-h-screen bg-[#6a8e7f] text-gray-900 font-sans selection:bg-amber-500 selection:text-black animate-in fade-in duration-700">
       <MainHeader 
         onNavigateHome={onNavigateHome} 
         onNavigateLogin={onNavigateLogin} 
@@ -112,7 +121,7 @@ export default function HomePage({ onNavigateHome, onNavigateLogin, onNavigateSe
               <div className="relative w-full h-full">
                 <img src={banner.image} alt={banner.title} className="w-full h-full object-cover opacity-85" />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#1a2c38] via-transparent to-black/40"></div>
-                <div className="absolute bottom-20 left-6 md:left-16 max-w-3xl text-white drop-shadow-2xl">
+                <div className="absolute bottom-20 left-6 md:left-16 max-w-3xl text-white drop-shadow-2xl animate-in slide-in-from-bottom-10 duration-1000">
                   <span className="bg-amber-500 text-black text-xs md:text-sm font-extrabold px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block shadow-lg">{banner.tag}</span>
                   <h1 className="text-4xl md:text-7xl font-black mb-3 leading-tight tracking-tight">{banner.title}</h1>
                   <p className="text-lg md:text-2xl text-gray-100 font-medium mb-8">{banner.subtitle}</p>

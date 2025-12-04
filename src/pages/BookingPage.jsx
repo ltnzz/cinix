@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Home, ChevronLeft, Calendar, Loader2 } from "lucide-react";
+import { Home, ChevronLeft, Calendar, Loader2, X, Ticket, MapPin, Clock, Film, Receipt, Info } from "lucide-react"; 
 import { useNavigate, useLocation } from "react-router-dom";
 
-// --- Seat component ---
+const API_BASE_URL = "https://cinix-be.vercel.app"; 
+
 const Seat = ({ id, status, onClick, label }) => {
   const baseStyle = "w-9 h-9 md:w-11 md:h-11 rounded-t-lg text-[10px] md:text-xs font-bold transition-all duration-200 flex items-center justify-center select-none shadow-sm";
   const styles = {
@@ -52,19 +53,15 @@ export default function BookingPage(props) {
   const location = useLocation();
   const stateFromNav = location.state || {};
 
-  // Props or navigation state fallback
-  const movie = props.movie || stateFromNav.movie || { title: "TRON: ARES (2025)", poster_url: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ8tq8lygfqv4hEIDsAjS88Rdh-z99CusKQyg&s" };
-  const cinema = props.cinema || stateFromNav.cinema || "AEON MALL TANJUNG BARAT XXI";
+  const movie = props.movie || stateFromNav.movie || { title: "Film", poster_url: "https://via.placeholder.com/300x450" };
+  const cinema = props.cinema || stateFromNav.cinema || "XXI Cinema";
   
-  // TANGKAP TANGGAL & WAKTU DARI STATE
-  const time = props.time || stateFromNav.time || "14:30";
-  // Gunakan tanggal yang dipilih user, atau fallback ke hari ini jika null
+  const time = props.time || stateFromNav.time || "00:00";
   const selectedDate = props.date || stateFromNav.date || new Date().toISOString(); 
 
-  const scheduleId = props.scheduleId || stateFromNav.scheduleId || "default-schedule-id"; 
-  const studioId = props.studioId || stateFromNav.studioId || "6cf13e1f-105d-4cc9-b76e-6f4b6db93f61";
+  const scheduleId = props.scheduleId || stateFromNav.scheduleId; 
+  const initialStudioId = props.studioId || stateFromNav.studioId;
   
-  // Get userId from props/state, or fetch from auth
   let userId = props.userId || stateFromNav.userId;
   
   if (!userId) {
@@ -75,7 +72,7 @@ export default function BookingPage(props) {
         userId = user.id_user || user.id || user.userId || user.email; 
       }
     } catch (e) {
-      console.error("Failed to get user from storage:", e);
+      console.error("Gagal mengambil user dari storage:", e);
     }
   }
   
@@ -87,74 +84,68 @@ export default function BookingPage(props) {
   const [selectedSeats, setSelectedSeats] = useState([]);
   const [error, setError] = useState(null);
 
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+
   const ticketPrice = props.ticketPrice || 50000;
+  const adminFee = 3000;  
+  const taxRate = 0.11;   
   const maxSeats = props.maxSeats || 8;
+
+  const subTotal = selectedSeats.length * ticketPrice;
+  const taxAmount = Math.round(subTotal * taxRate);
+  const grandTotal = subTotal + taxAmount + (selectedSeats.length > 0 ? adminFee : 0);
 
   const snapLoadedRef = useRef(false);
 
-  // Load Midtrans Snap script
   useEffect(() => {
     if (!midtransClientKey) {
-      console.warn("Midtrans client key not provided. Snap.js will not be loaded.");
+      console.warn("Midtrans client key missing");
       return;
     }
-
     if (document.querySelector('script[data-midtrans-snap]')) {
       snapLoadedRef.current = !!window.snap;
       return;
     }
-
     const script = document.createElement("script");
     script.src = "https://app.sandbox.midtrans.com/snap/snap.js";
     script.async = true;
     script.setAttribute("data-client-key", midtransClientKey);
     script.setAttribute("data-midtrans-snap", "true");
-    script.onload = () => {
-      snapLoadedRef.current = !!window.snap;
-      console.log("Midtrans Snap loaded", snapLoadedRef.current);
-    };
-    script.onerror = () => {
-      console.error("Failed to load Midtrans Snap.js");
-    };
-
+    script.onload = () => { snapLoadedRef.current = !!window.snap; };
     document.body.appendChild(script);
   }, [midtransClientKey]);
 
-  // Fetch seats
   useEffect(() => {
     const load = async () => {
-      let currentStudioId = studioId;
-
-      if (!currentStudioId && scheduleId) {
-        try {
-          const scheduleRes = await axios.get(`https://cinix-be.vercel.app/schedules/${scheduleId}`, {
-            withCredentials: true
-          });
-          currentStudioId = scheduleRes.data?.studio_id || scheduleRes.data?.data?.studio_id;
-        } catch (err) {
-          console.error("Failed to fetch schedule:", err);
-        }
-      }
-
-      if (!currentStudioId) {
-        setError("Studio ID tidak tersedia. Pastikan data dikirim dari halaman sebelumnya.");
-        setIsLoading(false);
-        return;
-      }
-
       setIsLoading(true);
       setError(null);
 
       try {
-        const res = await axios.get(`https://cinix-be.vercel.app/studios/${currentStudioId}/seats`, { 
+        let currentStudioId = initialStudioId;
+
+        if (scheduleId) {
+            try {
+                const scheduleRes = await axios.get(`${API_BASE_URL}/schedules/${scheduleId}`, {
+                    withCredentials: true
+                });
+                const realStudioId = scheduleRes.data?.studio_id || scheduleRes.data?.data?.studio_id;
+                if (realStudioId) currentStudioId = realStudioId;
+            } catch (err) {
+                console.warn("Gagal verifikasi jadwal, mencoba ID awal...", err);
+            }
+        }
+
+        if (!currentStudioId) {
+            throw new Error("Studio tidak ditemukan. Silakan kembali ke halaman sebelumnya.");
+        }
+
+        const res = await axios.get(`${API_BASE_URL}/studios/${currentStudioId}/seats`, { 
           withCredentials: true 
         });
         const raw = res.data?.data || res.data;
 
         if (!raw || raw.length === 0) {
-          setError("Tidak ada data kursi tersedia");
-          setIsLoading(false);
-          return;
+          throw new Error("Tidak ada data kursi tersedia untuk studio ini.");
         }
 
         const grouped = raw.reduce((acc, seat) => {
@@ -171,25 +162,22 @@ export default function BookingPage(props) {
         }, {});
 
         Object.keys(grouped).forEach(r => grouped[r].sort((a,b) => a._num - b._num));
-
-        const processed = Object.keys(grouped).sort().map(r => ({ 
-          rowLabel: r, 
-          seats: grouped[r] 
-        }));
+        const processed = Object.keys(grouped).sort().map(r => ({ rowLabel: r, seats: grouped[r] }));
         
         setSeatsData(processed);
       } catch (err) {
         console.error(err);
-        setError("Gagal memuat data kursi. Periksa koneksi atau server.");
+        setError(err.message || "Gagal memuat data kursi. Periksa koneksi backend.");
       } finally {
-        setIsLoading(false);
+        setTimeout(() => {
+            setIsLoading(false);
+        }, 800); 
       }
     };
 
     load();
-  }, [studioId]);
+  }, [scheduleId, initialStudioId]);
 
-  // Toggle seat selection
   const toggleSeat = (seatId) => {
     if (selectedSeats.includes(seatId)) {
       setSelectedSeats(prev => prev.filter(s => s !== seatId));
@@ -209,44 +197,43 @@ export default function BookingPage(props) {
     .sort((a,b) => a.localeCompare(b, undefined, {numeric: true}))
     .join(", ");
 
-  // Proceed to payment
-  const handleProceedToPayment = async () => {
+  const handleInitialCheckout = () => {
+    if (selectedSeats.length === 0) return;
+    setShowConfirmModal(true);
+  };
+
+  const executePayment = async () => {
     if (selectedSeats.length === 0) return;
     
     if (!scheduleId) {
       alert("Schedule tidak lengkap.");
+      setShowConfirmModal(false);
       return;
     }
 
     setIsSubmitting(true);
 
-    const totalAmount = selectedSeats.length * ticketPrice;
     const params = new URLSearchParams();
     params.append("schedule_id", scheduleId);
     params.append("seats", selectedSeats.join(","));
-    params.append("amount", totalAmount.toString());
+    params.append("amount", subTotal.toString());
 
     try {
-      const res = await axios.post("https://cinix-be.vercel.app/payment", params.toString(), {
+      const res = await axios.post(`${API_BASE_URL}/payment`, params.toString(), {
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
         withCredentials: true 
       });
 
       const data = res.data || {};
-      const token = data.token || data.snap?.token || data.snap_token || data.transactionToken || null;
-      const redirectUrl = data.redirect_url || data.payment_url || null;
+      const token = data.token || data.snap?.token;
+      const redirectUrl = data.redirect_url;
 
-      if (token) {
-        if (!window.snap) {
-          alert("Gagal memuat Midtrans Snap. Silakan refresh halaman.");
-          setIsSubmitting(false);
-          return;
-        }
+      setShowConfirmModal(false); 
 
+      if (token && window.snap) {
         window.snap.pay(token, {
           onSuccess: function(result){
             console.log("Midtrans success", result);
-            
             try {
                 const storageUserId = userId || "guest_user"; 
                 const storageKey = `tickets_${storageUserId}`;
@@ -261,7 +248,7 @@ export default function BookingPage(props) {
                     booking_date: new Date().toISOString(),
                     seats: selectedSeats, 
                     quantity: selectedSeats.length,
-                    total_amount: totalAmount,
+                    total_amount: grandTotal,
                     status: "Lunas",
                     transaction_id: result.transaction_id || result.order_id
                 };
@@ -270,28 +257,22 @@ export default function BookingPage(props) {
                 const updatedTickets = [newTicket, ...existingTickets];
                 
                 localStorage.setItem(storageKey, JSON.stringify(updatedTickets));
-                console.log(`Tiket berhasil disimpan ke ${storageKey}`);
-
             } catch (err) {
                 console.error("Gagal menyimpan tiket lokal:", err);
             }
 
             alert("Pembayaran sukses! Tiket Anda telah diterbitkan.");
-            
             navigate("/mytickets"); 
           },
           onPending: function(result){
-            console.log("Midtrans pending", result);
             alert("Pembayaran pending. Silakan selesaikan pembayaran Anda.");
             navigate("/"); 
           },
           onError: function(result){
-            console.error("Midtrans error", result);
             alert("Terjadi kesalahan pembayaran. Silakan coba lagi.");
             setIsSubmitting(false);
           },
           onClose: function(){
-            console.log("Midtrans popup closed");
             setIsSubmitting(false);
           }
         });
@@ -305,29 +286,39 @@ export default function BookingPage(props) {
 
     } catch (err) {
       console.error(err);
-      alert("Gagal memproses pembayaran. Silakan coba lagi.");
+      alert(err.response?.data?.message || "Gagal memproses pembayaran. Silakan coba lagi.");
       setIsSubmitting(false);
+      setShowConfirmModal(false);
     }
   };
 
-  if (isLoading) return (
-    <div className="min-h-screen bg-[#f5f1dc] flex flex-col items-center justify-center gap-4">
-      <div className="w-12 h-12 border-4 border-[#2a4c44] border-t-transparent rounded-full animate-spin"></div>
-      <p className="text-[#2a4c44] font-semibold animate-pulse">Memuat Data Kursi...</p>
-    </div>
-  );
+  if (isLoading) {
+    return (
+        <div className="min-h-screen bg-[#6a8e7f] flex flex-col items-center justify-center gap-4">
+            <div className="relative">
+                <div className="w-16 h-16 border-4 border-[#fff9e6]/30 border-t-[#fff9e6] rounded-full animate-spin"></div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <Film size={20} className="text-[#fff9e6] opacity-80" />
+                </div>
+            </div>
+            <p className="text-[#fff9e6] font-bold text-lg animate-pulse tracking-wide">
+                Menyiapkan Kursi...
+            </p>
+        </div>
+    );
+  }
 
   if (error) return (
     <div className="min-h-screen bg-[#f5f1dc] flex flex-col items-center justify-center gap-4 p-6">
       <div className="text-red-600 text-6xl">⚠️</div>
       <h2 className="text-xl font-bold text-[#2a4c44]">Terjadi Kesalahan</h2>
-      <p className="text-gray-600 text-center max-w-md">{error}</p>
+      <p className="text-gray-600 text-center max-w-md bg-white p-4 rounded-xl border border-red-200 shadow-sm font-mono text-sm">{error}</p>
       <button onClick={() => window.location.reload()} className="mt-4 px-6 py-3 bg-[#2a4c44] text-white font-bold rounded-xl hover:bg-[#1e3630] transition">Coba Lagi</button>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#6a8e7f] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#6a8e7f] flex flex-col font-sans animate-in fade-in duration-500">
       <Header 
         title={movie.title} 
         subtitle={cinema || "AEON MALL TANJUNG BARAT XXI"} 
@@ -335,8 +326,9 @@ export default function BookingPage(props) {
         onHome={() => navigate('/')} 
       />
 
-      <div className="flex-grow flex flex-col lg:flex-row p-4 md:p-6 gap-6 max-w-7xl mx-auto w-full">
-        <div className="flex-grow bg-[#f5f1dc] p-4 md:p-8 rounded-3xl shadow-xl flex flex-col items-center overflow-hidden relative">
+      <div className="flex-grow flex flex-col lg:flex-row p-4 md:p-6 gap-6 max-w-7xl mx-auto w-full relative z-10 animate-in slide-in-from-bottom-8 duration-700">
+        
+        <div className="flex-grow bg-[#f5f1dc] p-4 md:p-8 rounded-3xl shadow-xl flex flex-col items-center overflow-hidden relative border border-[#2a4c44]/10">
           <h2 className="text-xl font-black text-[#2a4c44] mb-6 self-start">Pilih Kursi</h2>
 
           <div className="w-full max-w-2xl mb-12 relative flex justify-center">
@@ -383,16 +375,16 @@ export default function BookingPage(props) {
         </div>
 
         <div className="w-full lg:w-96 flex-shrink-0">
-          <div className="bg-white p-6 rounded-3xl shadow-xl sticky top-24">
+          <div className="bg-white p-6 rounded-3xl shadow-xl sticky top-24 border border-gray-100">
             <h2 className="text-xl font-black text-[#2a4c44] mb-6">Ringkasan</h2>
 
             <div className="flex gap-4 mb-6">
               <img src={movie.poster_url} alt="Poster" className="w-20 h-28 object-cover rounded-xl shadow-md bg-gray-200" />
               <div>
                 <h3 className="font-bold text-[#2a4c44] line-clamp-2 leading-tight mb-1">{movie.title}</h3>
-                <p className="text-xs text-gray-500 font-medium mb-2">{cinema || "XXI Cinema"}</p>
+                <p className="text-xs text-gray-500 font-medium mb-2">{cinema}</p>
                 <div className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 text-[10px] px-2 py-1 rounded-md font-bold">
-                  <Calendar size={12} /> {time || "14:30"} WIB
+                  <Calendar size={12} /> {time} WIB
                 </div>
                 <div className="mt-1 text-xs text-gray-500 font-medium">
                     {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
@@ -402,41 +394,126 @@ export default function BookingPage(props) {
 
             <div className="border-t border-dashed border-gray-300 py-4 space-y-3 text-sm">
               <div className="flex justify-between items-start">
-                <span className="text-gray-500">Nomor Kursi</span>
+                <span className="text-gray-500">Nomor Kursi ({selectedSeats.length})</span>
                 <span className="font-bold text-[#2a4c44] text-right max-w-[150px] leading-snug">
                   {displaySeats || "-"}
                 </span>
               </div>
+              
               <div className="flex justify-between">
-                <span className="text-gray-500">Harga Satuan</span>
-                <span className="font-medium">Rp {ticketPrice.toLocaleString('id-ID')}</span>
+                <span className="text-gray-500">Subtotal Tiket</span>
+                <span className="font-medium">Rp {subTotal.toLocaleString('id-ID')}</span>
               </div>
+
+              {selectedSeats.length > 0 && (
+                <>
+                    <div className="flex justify-between text-gray-500 text-xs">
+                        <span>Pajak Hiburan (11%)</span>
+                        <span>Rp {taxAmount.toLocaleString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between text-gray-500 text-xs">
+                        <span>Biaya Layanan</span>
+                        <span>Rp {adminFee.toLocaleString('id-ID')}</span>
+                    </div>
+                </>
+              )}
             </div>
 
             <div className="border-t border-gray-200 py-4 flex justify-between items-center mb-2">
-              <span className="text-lg font-bold text-[#2a4c44]">Total</span>
-              <span className="text-2xl font-black text-amber-500">Rp {(selectedSeats.length * ticketPrice).toLocaleString('id-ID')}</span>
+              <div className="flex flex-col">
+                <span className="text-lg font-bold text-[#2a4c44]">Total Bayar</span>
+                <span className="text-[10px] text-gray-400">Termasuk pajak & fee</span>
+              </div>
+              <span className="text-2xl font-black text-amber-500">Rp {grandTotal.toLocaleString('id-ID')}</span>
             </div>
 
             <button 
-              onClick={handleProceedToPayment} 
+              onClick={handleInitialCheckout} 
               disabled={selectedSeats.length === 0 || isSubmitting}
               className="w-full py-4 bg-[#2a4c44] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e3630] hover:shadow-xl hover:-translate-y-1 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0 flex items-center justify-center gap-2"
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="animate-spin" size={20} /> 
-                  Memproses...
-                </>
-              ) : (
-                `Lanjut Pembayaran (${selectedSeats.length})`
-              )}
+              Lanjut Pembayaran
             </button>
 
           </div>
         </div>
-
       </div>
+
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+            onClick={() => !isSubmitting && setShowConfirmModal(false)}
+          ></div>
+          
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 bg-[#f5f1dc] flex justify-between items-center border-b border-[#2a4c44]/10">
+              <h3 className="text-lg font-black text-[#2a4c44] flex items-center gap-2">
+                <Receipt size={20}/> Konfirmasi Pesanan
+              </h3>
+              <button 
+                onClick={() => setShowConfirmModal(false)} 
+                disabled={isSubmitting}
+                className="p-2 bg-white/50 rounded-full hover:bg-white text-gray-500 transition disabled:opacity-50"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto">
+              <div className="flex gap-4 mb-6 bg-[#f8f9fa] p-3 rounded-2xl border border-gray-100">
+                <img src={movie.poster_url} alt="Poster" className="w-16 h-24 object-cover rounded-lg shadow-sm" />
+                <div className="flex flex-col justify-center">
+                  <h4 className="font-bold text-[#2a4c44] leading-tight text-sm mb-1">{movie.title}</h4>
+                  <span className="text-xs text-gray-500">{cinema}</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-[#fff9e6]/50 p-4 rounded-xl border border-[#fff9e6]">
+                <div className="flex justify-between text-sm">
+                    <span className="text-gray-600">Tiket x {selectedSeats.length}</span>
+                    <span className="font-bold">Rp {subTotal.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-500">
+                    <span>Pajak (11%)</span>
+                    <span>Rp {taxAmount.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-500 border-b border-gray-200 pb-2">
+                    <span>Biaya Layanan</span>
+                    <span>Rp {adminFee.toLocaleString('id-ID')}</span>
+                </div>
+                <div className="flex justify-between text-lg font-black text-[#2a4c44] pt-1">
+                    <span>Total</span>
+                    <span>Rp {grandTotal.toLocaleString('id-ID')}</span>
+                </div>
+              </div>
+
+              <div className="mt-4 flex items-start gap-2 bg-blue-50 p-3 rounded-lg text-blue-800 text-xs">
+                <Info size={16} className="shrink-0 mt-0.5"/>
+                <p>Pastikan jadwal dan kursi sudah benar. Tiket yang dibeli tidak dapat ditukar atau dikembalikan.</p>
+              </div>
+            </div>
+
+            <div className="p-6 pt-2 bg-white border-t border-gray-100 flex gap-3">
+              <button 
+                onClick={() => setShowConfirmModal(false)}
+                disabled={isSubmitting}
+                className="flex-1 py-3 text-gray-600 font-bold bg-gray-100 rounded-xl hover:bg-gray-200 transition disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button 
+                onClick={executePayment}
+                disabled={isSubmitting}
+                className="flex-1 py-3 bg-[#2a4c44] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e3630] transition disabled:bg-gray-400 flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Bayar Sekarang"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
