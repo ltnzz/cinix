@@ -36,8 +36,26 @@ export default function SignUpPage({ onNavigateLogin }) {
       const endpoint = "https://cinix-be.vercel.app/register"; 
       await axios.post(endpoint, formData);
       setShowSuccessModal(true);
+
     } catch (error) {
-      setErrorMessage(error.response?.data?.message || "Registrasi gagal.");
+      let specificMessage = null;
+      const responseData = error.response?.data;
+
+      if (responseData && responseData.errors && Array.isArray(responseData.errors)) {
+        specificMessage = responseData.errors
+            .map(err => {
+                const fieldName = err.field.charAt(0).toUpperCase() + err.field.slice(1);
+                return `• ${fieldName}: ${err.messages}`;
+            })
+            .join('\n');
+      } else if (responseData) {
+        specificMessage = responseData.message || responseData.error;
+      }
+      if (specificMessage) {
+        setErrorMessage(specificMessage); 
+      } else {
+        setErrorMessage("Validasi gagal. Terjadi kesalahan server atau format respons tidak terduga.");
+      }
     } finally {
       setLoading(false);
     }
@@ -52,7 +70,7 @@ export default function SignUpPage({ onNavigateLogin }) {
           <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6">
-                 <CheckCircle className="text-green-600 w-12 h-12" strokeWidth={3} />
+                <CheckCircle className="text-green-600 w-12 h-12" strokeWidth={3} />
               </div>
               <h3 className="text-2xl font-bold text-[#2a4c44] mb-2">Registration Successful!</h3>
               <p className="text-gray-600 mb-8">Selamat! Akun Anda berhasil dibuat. Silakan login untuk memesan tiket.</p>
@@ -72,8 +90,9 @@ export default function SignUpPage({ onNavigateLogin }) {
           <h2 className="text-3xl font-bold text-center mb-8">Sign Up</h2>
           
           {errorMessage && (
-            <div className="mb-4 p-3 bg-red-500/50 border border-red-500 rounded text-sm text-center animate-pulse">
-              {errorMessage}
+            <div className="mb-4 p-4 bg-red-500/50 border border-red-500 rounded text-sm text-center animate-pulse text-left">
+              <p className="font-bold">Validasi gagal</p>
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{errorMessage}</p>
             </div>
           )}
 
@@ -90,12 +109,12 @@ export default function SignUpPage({ onNavigateLogin }) {
               value={formData.password} 
               onChange={handleChange}
               rightElement={
-                 <div className="flex items-center gap-2 text-gray-400">
+                <div className="flex items-center gap-2 text-gray-400">
                     <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:text-white transition-colors">
                         {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                     <Lock size={20} />
-                 </div>
+                </div>
               }
             />
 
@@ -107,15 +126,15 @@ export default function SignUpPage({ onNavigateLogin }) {
               value={formData.confirm_password} 
               onChange={handleChange}
               rightElement={
-                 <div className="flex items-center gap-2 text-gray-400">
+                <div className="flex items-center gap-2 text-gray-400">
                     <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="hover:text-white transition-colors">
                         {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                     </button>
                     <Lock size={20} />
-                 </div>
+                </div>
               }
             />
-
+            
             <button
               type="submit"
               disabled={loading}

@@ -9,10 +9,7 @@ const API_BASE_URL = "https://cinix-be.vercel.app";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState({ 
-    email: "admin@cinix.com", 
-    password: "admin123" 
-  });
+  const [formData] = useState();
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -42,7 +39,6 @@ export default function AdminLogin() {
       navigate('/admin');
 
     } catch (error) {
-      console.error("Login Gagal:", error);
       const msg = error.response?.data?.message || "Cek email/password atau koneksi backend.";
       alert(`Gagal Login: ${msg}`);
     } finally {
@@ -60,11 +56,11 @@ export default function AdminLogin() {
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-bold text-[#2a4c44] mb-2">Email Admin</label>
-            <input type="email" required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})} />
+            <input type="email" required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" />
           </div>
           <div>
             <label className="block text-sm font-bold text-[#2a4c44] mb-2">Password</label>
-            <input type="password" required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} />
+            <input type="password" required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" />
           </div>
           <button type="submit" disabled={loading} className="w-full py-3 bg-[#2a4c44] text-white font-bold rounded-xl hover:bg-[#1e3630] transition-all flex justify-center">
             {loading ? <Loader2 className="animate-spin" /> : "Masuk Dashboard"}

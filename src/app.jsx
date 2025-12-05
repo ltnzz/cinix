@@ -16,6 +16,8 @@ import Footer from "./components/Footer";
 import AdminGuard from "./components/auth/adminGuard";
 import AdminLogin from "./components/admin/AdminLogin";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AboutDeveloperPage from "./components/biodata.jsx";
+import ScrollToTop from "./components/adjustScroll.jsx";
 
 const AuthGuard = ({ user, children }) => {
   const navigate = useNavigate();
@@ -140,6 +142,8 @@ return (
 
         <Route path="/admin" element={<AdminGuard><AdminDashboardPage /></AdminGuard>} />
         <Route path="/admin/login" element={<AdminLogin />} />
+
+        <Route path="/about-developer" element={<AboutDeveloperPage/>}/>
       </Routes>
       
       <Footer />
@@ -168,6 +172,7 @@ return (
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <CinixRoutes />
     </BrowserRouter>
   );

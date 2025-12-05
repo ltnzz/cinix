@@ -29,8 +29,11 @@ export default function AdminDashboardPage() {
       try {
         const res = await axios.get(`${API_BASE_URL}/movies`);
         setMovies(res.data.data || res.data); 
-      } catch (err) { console.error("Gagal load movies"); } 
-      finally { setLoading(false); }
+      } catch (err) { 
+        console.error("Gagal load movies"); 
+      } finally { 
+        setLoading(false); 
+      }
     };
     fetchMovies();
   }, [isAdmin, refreshKey]);
@@ -105,7 +108,6 @@ export default function AdminDashboardPage() {
             </div>
         )}
       </main>
-
       <MovieFormModal show={showModal} onClose={() => setShowModal(false)} editData={editData} onSuccess={() => setRefreshKey(prev => prev + 1)}/>
     </div>
   );

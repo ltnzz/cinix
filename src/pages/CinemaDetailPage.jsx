@@ -1,9 +1,9 @@
 import React from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
 import { MapPin, Star, ArrowLeft, Calendar, Clock } from "lucide-react";
-import DetailHeader from "../components/detMovieHeader"; 
+import MainHeader from "../components/MainHeader";
 
-export default function CinemaDetailPage({ onNavigateHome, onNavigateLogin, onNavigateBooking }) {
+export default function CinemaDetailPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const cinema = location.state?.cinemaData;
@@ -24,7 +24,7 @@ export default function CinemaDetailPage({ onNavigateHome, onNavigateLogin, onNa
 
 return (
     <div className="min-h-screen bg-[#6a8e7f] font-sans">
-        <DetailHeader onNavigateHome={onNavigateHome} onNavigateLogin={onNavigateLogin} />
+        <MainHeader />
 
         <main className="max-w-5xl mx-auto px-6 py-8">
         

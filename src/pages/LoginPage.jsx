@@ -56,19 +56,30 @@ export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword
         setTimeout(() => {
             window.location.href = "/"; 
         }, 2000);
-
       } else {
           setErrorMessage("Token tidak valid.");
           setLoading(false);
       }
-
     } catch (error) {
-      console.error("Login Error:", error);
-      if (error.response) {
-        setErrorMessage(error.response.data.message || "Email atau password salah.");
-      } else {
-        setErrorMessage("Gagal terhubung ke server.");
+      let specificMessage = null;
+      const responseData = error.response?.data;
+
+      if (responseData && responseData.errors && Array.isArray(responseData.errors)) {
+        specificMessage = responseData.errors
+            .map(err => {
+                const fieldName = err.field.charAt(0).toUpperCase() + err.field.slice(1);
+                return `• ${fieldName}: ${err.messages}`;
+            })
+            .join('\n');
+      } else if (responseData) {
+        specificMessage = responseData.message || responseData.error;
       }
+      if (specificMessage) {
+        setErrorMessage(specificMessage); 
+      } else {
+        setErrorMessage("Validasi gagal. Terjadi kesalahan server atau format respons tidak terduga.");
+      }
+    } finally {
       setLoading(false);
     }
   };
@@ -102,8 +113,9 @@ export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword
           <h2 className="text-3xl font-bold text-center mb-8">Login</h2>
 
           {errorMessage && (
-            <div className="mb-6 p-3 bg-red-500/50 border border-red-500 rounded-lg text-sm text-center animate-pulse">
-              {errorMessage}
+            <div className="mb-4 p-4 bg-red-500/50 border border-red-500 rounded text-sm text-center animate-pulse text-left">
+              <p className="font-bold">Validasi gagal</p>
+              <p className="text-sm whitespace-pre-wrap leading-relaxed">{errorMessage}</p>
             </div>
           )}
 

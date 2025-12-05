@@ -2,38 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Clock, Filter, Search, PlayCircle, Lock, X, Heart, ChevronLeft, Share2, User, Film } from "lucide-react"; 
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios"; 
-
-const DetailHeader = ({ onNavigateHome, onNavigateLogin, user }) => (
-  <header className="bg-[#f5f1dc] text-[#2a4c44] p-4 sticky top-0 z-50 shadow-md flex justify-between items-center">
-    <button 
-      onClick={onNavigateHome} 
-      className="flex items-center gap-2 text-[#2a4c44] hover:bg-black/5 transition-colors px-2 py-1 rounded-lg active:scale-95"
-    >
-      <ChevronLeft size={24} />
-      <span className="font-bold text-sm hidden md:inline">Kembali</span>
-    </button>
-
-    <div className="flex items-center gap-4">
-        {!user ? (
-            <button 
-                onClick={onNavigateLogin}
-                className="bg-[#2a4c44] text-[#f5f1dc] px-4 py-1.5 rounded-full font-bold text-sm hover:shadow-lg hover:bg-[#3a6a5e] active:scale-95 transition shadow-lg"
-            >
-                Masuk
-            </button>
-        ) : (
-            <div className="flex items-center gap-2 bg-black/20 pl-2 pr-3 py-1.5 rounded-full border border-white/5">
-              <div className="w-7 h-7 bg-[#2a4c44] text-[#f5f1dc] rounded-full flex items-center justify-center text-xs font-bold">
-                  {user.name ? user.name.charAt(0).toUpperCase() : <User size={14} />}
-              </div>
-              <span className="text-xs font-medium max-w-[100px] truncate hidden sm:block">
-                  {user.name || "Pengguna"}
-              </span>
-            </div>
-        )}
-    </div>
-  </header>
-);
+import MainHeader from "../components/MainHeader";
 
 const formatDuration = (minutes) => {
   const h = Math.floor(minutes / 60);
@@ -261,11 +230,7 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
 
   return (
     <div className="min-h-screen bg-[#6a8e7f] relative animate-in fade-in duration-500">
-      <DetailHeader
-        onNavigateHome={onNavigateHome}
-        onNavigateLogin={onNavigateLogin}
-        user={user}
-      />
+      <MainHeader />
 
       {showLoginModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">

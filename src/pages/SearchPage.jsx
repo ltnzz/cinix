@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { Search, ChevronRight, MapPin } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import DetailHeader from "../components/detMovieHeader"; 
+import MainHeader from "../components/MainHeader";
 
 const CINEMA_DATABASE = [
   { id: 1, city: "JAKARTA", name: "AEON MALL TANJUNG BARAT XXI", brand: "XXI" },
@@ -73,7 +73,7 @@ const CinemaRow = ({ name, brand, onSelect }) => (
   </button>
 );
 
-export default function SearchPage({ onNavigateHome, onNavigateLogin }) {
+export default function SearchPage() {
   const navigate = useNavigate();
   const [activeCity, setActiveCity] = useState("JAKARTA");
   const [searchQuery, setSearchQuery] = useState("");
@@ -94,10 +94,7 @@ export default function SearchPage({ onNavigateHome, onNavigateLogin }) {
 
   return (
     <div className="min-h-screen bg-[#6a8e7f] flex flex-col">
-      <DetailHeader 
-        onNavigateHome={onNavigateHome} 
-        onNavigateLogin={onNavigateLogin} 
-      />
+      <MainHeader />
 
       <main className="flex-grow w-full max-w-4xl mx-auto p-6 md:p-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
         
