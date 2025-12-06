@@ -3,6 +3,7 @@ import { Clock, Filter, Search, PlayCircle, Lock, X, Heart, ChevronLeft, Share2,
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import axios from "axios"; 
 import MainHeader from "../components/MainHeader";
+import TrailerModal from "../components/TrailerModal";
 
 const formatDuration = (minutes) => {
   const h = Math.floor(minutes / 60);
@@ -63,6 +64,8 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
   const navigate = useNavigate();
   const { id_movie } = useParams();
   const location = useLocation(); 
+
+  const [showTrailer, setShowTrailer] = useState(false);
 
   const [movie, setMovie] = useState(location.state?.movie || null);
   const [loading, setLoading] = useState(true);
@@ -286,10 +289,31 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
                 {formatDuration(movie.duration)}
               </span>
 
-              <button className="flex items-center gap-3 mt-8 bg-white/10 hover:bg-white/20 w-max px-6 py-3 rounded-full transition-all group border border-white/20">
-                  <PlayCircle size={32} className="text-amber-400 group-hover:scale-110 transition-transform"/>
-                  <span className="text-lg font-bold">Lihat Trailer</span>
+              <button 
+                  onClick={() => {
+                      if (movie.trailer_url) {
+                          setShowTrailer(true);
+                      } else {
+                          alert("Maaf, trailer untuk film ini belum tersedia.");
+                      }
+                  }} 
+                  className={`flex items-center gap-3 px-6 py-3 rounded-full transition-all group border border-white/20 w-max mt-6 ${
+                      movie.trailer_url 
+                      ? "bg-white/10 hover:bg-white/20 cursor-pointer" 
+                      : "bg-gray-500/10 cursor-not-allowed opacity-50"
+                  }`}
+              >
+                  <PlayCircle size={32} className={`transition-transform ${movie.trailer_url ? "text-amber-400 group-hover:scale-110" : "text-gray-400"}`}/>
+                  <span className="text-lg font-bold text-white">
+                      {movie.trailer_url ? "Lihat Trailer" : "Trailer Tidak Tersedia"}
+                  </span>
               </button>
+
+              <TrailerModal 
+                show={showTrailer} 
+                onClose={() => setShowTrailer(false)} 
+                trailerUrl={movie.trailer_url} 
+              />
             </div>
           </div>
 
