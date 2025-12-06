@@ -17,6 +17,7 @@ import AdminLogin from "./components/admin/AdminLogin";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AboutDeveloperPage from "./components/biodata.jsx";
 import ScrollToTop from "./components/adjustScroll.jsx";
+import ResetPasswordPage from "./pages/ResetPassword.jsx";
 
 const AuthGuard = ({ user, children }) => {
   const navigate = useNavigate();
@@ -133,12 +134,13 @@ return (
         <Route path="/login" element={<LoginPage {...navProps} />} />
         <Route path="/register" element={<SignUpPage {...navProps} />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage {...navProps} />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />}></Route>
         <Route path="/detail/:id_movie" element={<DetailWrapper baseProps={navProps} />} />
         <Route path="/booking" element={<BookingWrapper baseProps={navProps} />} />
         <Route path="/mytickets" element={<AuthGuard user={currentUser}><MyTicketsPage {...navProps} /></AuthGuard>} />
         <Route path="/wishlist" element={<AuthGuard user={currentUser}><WishlistPage {...navProps} /></AuthGuard>} />
 
-        <Route path="/admin" element={<AdminGuard><AdminDashboardPage /></AdminGuard>} />
+        <Route path="/admin" element={<AdminGuard> <AdminDashboardPage /> </AdminGuard>} />
         <Route path="/admin/login" element={<AdminLogin />} />
 
         <Route path="/about-developer" element={<AboutDeveloperPage/>}/>

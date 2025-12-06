@@ -2,6 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChevronLeft, Home, Film } from 'lucide-react';
 import bone from "../assets/img/bone.jpg"
+import ijul from "../assets/img/ijul2.png"
+import benita from "../assets/img/benita.jpg"
+import paras from "../assets/img/paras.jpg"
 
 const TEAM_MEMBERS = [
     {
@@ -12,21 +15,21 @@ const TEAM_MEMBERS = [
     },
     {
         name: "Zulfikar Hasan",
-        role: "UI Designer, Front End Developer",
+        role: "UI Designer, Front-End Developer",
         nim: "2410501016",
-        photoUrl: "https://placehold.co/400x400/1f3630/fff9e6?text=ZH",
+        photoUrl: ijul,
     },
     {
         name: "Faraz Thifal",
         role: "Back-End Developer",
         nim: "2410501022",
-        photoUrl: "https://placehold.co/400x400/0f172a/fff9e6?text=FT",
+        photoUrl: paras,
     },
     {
         name: "Benita Aryani",
         role: "Front-End Developer",
         nim: "2410501023",
-        photoUrl: "https://placehold.co/400x400/4a5c68/fff9e6?text=BA",
+        photoUrl: benita,
     },
 ];
 
