@@ -5,6 +5,14 @@ import { Lock, Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from "lucide-react
 
 const API_BASE_URL = "https://cinix-be.vercel.app"; 
 
+const AuthHeader = () => (
+    <header className="absolute top-0 left-0 w-full p-6 z-10 flex justify-between items-center">
+        <div className="text-3xl font-black text-white tracking-tighter cursor-pointer">
+        CINIX<span className="text-amber-500">.</span>
+        </div>
+    </header>
+);
+
 const PasswordInput = ({ id, label, placeholder, value, onChange, showPassword, toggleShow }) => (
 <div className="mb-5">
     <label htmlFor={id} className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 ml-1">
@@ -80,6 +88,8 @@ export default function ResetPasswordPage() {
 
     return (
         <div className="flex flex-col min-h-screen relative bg-gray-900">
+            <AuthHeader />
+
             <main
                 className="flex-grow w-full flex items-center justify-center p-4"
                 style={{
