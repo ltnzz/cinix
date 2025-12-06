@@ -9,7 +9,10 @@ const API_BASE_URL = "https://cinix-be.vercel.app";
 
 export default function AdminLogin() {
   const navigate = useNavigate();
-  const [formData] = useState();
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -17,6 +20,13 @@ export default function AdminLogin() {
       navigate('/admin');
     }
   }, [navigate])
+
+  const handleChange = async (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault();
