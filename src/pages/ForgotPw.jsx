@@ -29,7 +29,8 @@ export default function ForgotPasswordPage({ onNavigateLogin }) {
       setEmail("");  
 
     } catch (err) {
-      setError("Email tidak ditemukan atau terjadi kesalahan server.");
+      const errMsg = err.response?.data?.message || "Terjadi kesalahan server."
+      setError(errMsg);
     } finally {
       setLoading(false);
     }
