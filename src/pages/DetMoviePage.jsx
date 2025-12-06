@@ -233,7 +233,9 @@ export default function DetailPage({ onNavigateHome, onNavigateLogin, onNavigate
 
   return (
     <div className="min-h-screen bg-[#6a8e7f] relative animate-in fade-in duration-500">
-      <MainHeader />
+      <MainHeader 
+      user={user}
+      />
 
       {showLoginModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
