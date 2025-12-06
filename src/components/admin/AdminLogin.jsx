@@ -33,12 +33,13 @@ export default function AdminLogin() {
     setLoading(true);
     
     try {
-      const params = new URLSearchParams();
-      params.append('email', formData.email.trim());
-      params.append('password', formData.password.trim());
+      const payload = {
+        email: formData.email.trim(),
+        password: formData.password.trim()
+      }
 
       const response = await axios.post(`${API_BASE_URL}/admin/login`, params, {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: { 'Content-Type': 'application/json' },
         withCredentials: true 
       });
       
