@@ -11,7 +11,6 @@ import DetailPage from "./pages/DetMoviePage.jsx";
 import BookingPage from "./pages/BookingPage.jsx";
 import MyTicketsPage from "./pages/MyTicketsPage";
 import WishlistPage from "./pages/WishlistPage";
-import CinemaDetailPage from "./pages/CinemaDetailPage";
 import Footer from "./components/Footer";
 import AdminGuard from "./components/auth/adminGuard";
 import AdminLogin from "./components/admin/AdminLogin";
@@ -138,7 +137,6 @@ return (
         <Route path="/booking" element={<BookingWrapper baseProps={navProps} />} />
         <Route path="/mytickets" element={<AuthGuard user={currentUser}><MyTicketsPage {...navProps} /></AuthGuard>} />
         <Route path="/wishlist" element={<AuthGuard user={currentUser}><WishlistPage {...navProps} /></AuthGuard>} />
-        <Route path="/cinema/:id" element={<CinemaDetailPage {...navProps} />} />
 
         <Route path="/admin" element={<AdminGuard><AdminDashboardPage /></AdminGuard>} />
         <Route path="/admin/login" element={<AdminLogin />} />
