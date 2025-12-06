@@ -95,9 +95,9 @@ export default function AboutDeveloperPage() {
             
             <CustomHeader navigate={navigate} />
 
-            <main className="container mx-auto px-4 md:px-8 py-6 max-w-7xl">
+            <main className="container mx-auto px-4 md:px-10 py-2 max-w-7xl">
                 
-                <div className="mb-4 animate-in slide-in-from-top-6 duration-500 text-center">
+                <div className="mb-2 animate-in slide-in-from-top-6 duration-500 text-center">
                     <h1 className="text-3xl md:text-4xl font-black text-[#fff9e6] drop-shadow-md flex items-center justify-center gap-3">
                         <Film size={32} className="text-amber-400"/> Struktur Tim
                     </h1>
@@ -113,7 +113,7 @@ export default function AboutDeveloperPage() {
                     
                     <div className="mt-4 pt-3 border-t border-white/20">
                         <p className="text-center text-xs text-gray-400">
-                            Ciao bangsul
+                            Cinix hadir bukan hanya untuk <span className='font-black'>Cinixers</span>, tapi juga untuk kalian yang pengen pesan tiket online <span className='font-black'>tanpa drama</span>.
                         </p>
                     </div>
                 </div>
