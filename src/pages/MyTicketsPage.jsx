@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Clapperboard, Clock, MapPin, Ticket, Trash2, User, QrCode, CalendarDays, Film } from "lucide-react"; 
+import { Clapperboard, Clock, MapPin, Ticket, Trash2, Film, QrCode, CalendarDays } from "lucide-react"; 
 import { useNavigate } from "react-router-dom";
 import MainHeader from "../components/MainHeader";
 
@@ -9,21 +9,29 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
     const [loading, setLoading] = useState(true);
 
     const loadTicketsSmart = () => {
-        if (!user) return;
+        
+        if (!user) {
+            setLoading(false);
+            return;
+        }
 
         const potentialIds = [
-            user.email,
-            user.uid,
             user.id,
+            user.uid,
+            user.userId,
+            user.email,
             user.username,
-            user.userId 
+            user.name ? user.name.replace(/\s+/g, '') : null
         ].filter(Boolean); 
+
+        potentialIds.push('guest');
 
         let allFoundTickets = [];
         const checkedKeys = new Set();
 
         potentialIds.forEach(id => {
             const key = `tickets_${id}`;
+
             if (checkedKeys.has(key)) return;
             checkedKeys.add(key);
 
@@ -31,18 +39,28 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
                 const storedData = localStorage.getItem(key);
                 if (storedData) {
                     const parsedData = JSON.parse(storedData);
+                    
                     if (Array.isArray(parsedData)) {
                         allFoundTickets = [...allFoundTickets, ...parsedData];
                     }
                 }
             } catch (e) {
-                console.error("Error loading tickets", e);
+                console.error("Internal Server Error", e);
             }
         });
 
-        const uniqueTickets = Array.from(new Map(allFoundTickets.map(ticket => [ticket.id, ticket])).values());
-        const sortedTickets = uniqueTickets.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
+        const uniqueTicketsMap = new Map();
+        allFoundTickets.forEach(ticket => {
+            const uniqueKey = ticket.transaction_id || ticket.id;
+            if (!uniqueTicketsMap.has(uniqueKey)) {
+                uniqueTicketsMap.set(uniqueKey, ticket);
+            }
+        });
+        
+        const uniqueTickets = Array.from(uniqueTicketsMap.values());
 
+        const sortedTickets = uniqueTickets.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
+        
         setTickets(sortedTickets);
         
         setTimeout(() => {
@@ -52,7 +70,7 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
 
     useEffect(() => {
         if (!user) {
-            const timer = setTimeout(() => setLoading(false), 1000);
+            const timer = setTimeout(() => setLoading(false), 1500);
             return () => clearTimeout(timer);
         } 
         loadTicketsSmart();
@@ -60,12 +78,18 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
 
     const clearHistory = () => {
         if(!user) return;
-        if(window.confirm("Apakah Anda yakin ingin menghapus semua riwayat tiket?")) {
-            const potentialIds = [user.email, user.uid, user.id, user.username].filter(Boolean);
+        if(window.confirm("Yakin ingin menghapus riwayat tiket?")) {
+            const potentialIds = [
+                user.id, user.uid, user.email, user.username, 
+                user.name ? user.name.replace(/\s+/g, '') : null,
+                'guest'
+            ].filter(Boolean);
+            
             potentialIds.forEach(id => {
                 localStorage.removeItem(`tickets_${id}`);
             });
             setTickets([]);
+            alert("Riwayat berhasil dihapus.");
         }
     };
 
@@ -79,7 +103,7 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
                     </div>
                 </div>
                 <p className="text-[#fff9e6] font-bold text-lg animate-pulse tracking-wide">
-                    Menyiapkan Tiketmu...
+                    Memuat Tiket...
                 </p>
             </div>
         );
@@ -114,7 +138,7 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
                 <div className="space-y-6 animate-in slide-in-from-bottom-10 duration-1000 fill-mode-forwards">
                     {tickets.length > 0 ? (
                         tickets.map((ticket) => {
-                            const rawDate = ticket.watch_date || ticket.watchDate || ticket.date || ticket.show_date || ticket.booking_date;
+                            const rawDate = ticket.watch_date || ticket.date || ticket.booking_date;
                             const dateObj = new Date(rawDate);
                             const validDate = isNaN(dateObj.getTime()) ? new Date() : dateObj;
                             
@@ -123,12 +147,15 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
                             });
 
                             const qrData = JSON.stringify({
-                                id: ticket.id, movie: ticket.movie_title, seats: ticket.seats,
-                                cinema: ticket.cinema_name, date: dateString, time: ticket.showtime
+                                id: ticket.id, 
+                                movie: ticket.movie_title, 
+                                seats: ticket.seats,
+                                status: ticket.status
                             });
                             
                             return (
-                                <div key={ticket.id} className="bg-white rounded-3xl overflow-hidden shadow-xl flex flex-col md:flex-row relative group hover:-translate-y-1 transition-transform duration-300">
+                                <div key={ticket.id} className="bg-white rounded-3xl overflow-hidden shadow-xl flex flex-col md:flex-row relative group hover:-translate-y-1 transition-transform duration-300 border border-white/20">
+                                    
                                     <div className="w-full md:w-40 h-48 md:h-auto relative bg-gray-200 shrink-0">
                                         <img 
                                             src={ticket.movie_poster} 
@@ -139,8 +166,8 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
                                                 e.target.src = "https://placehold.co/300x450?text=No+Poster";
                                             }}
                                         />
-                                        <div className={`absolute top-2 left-2 text-white text-xs font-bold px-2 py-1 rounded shadow z-10 ${ticket.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}>
-                                            {ticket.status}
+                                        <div className={`absolute top-2 left-2 text-white text-[10px] font-bold px-2 py-1 rounded shadow z-10 ${ticket.status === 'Lunas' ? 'bg-green-500' : 'bg-amber-500'}`}>
+                                            {ticket.status || "Lunas"}
                                         </div>
                                     </div>
 
@@ -179,7 +206,7 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
 
                                         <div className="mt-6 flex justify-between items-end border-t border-dashed border-gray-300 pt-4 relative z-10">
                                             <div className="text-xs text-gray-400 font-mono">
-                                                ID: #{ticket.id}
+                                                ID: #{ticket.id.toString().slice(-6)}
                                             </div>
                                             <div className="text-xl font-black text-amber-600">
                                                 {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(ticket.total_amount)}
@@ -208,7 +235,7 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
                                             <span className="text-[10px] text-gray-400 font-mono block mb-1">SCAN ENTRY</span>
                                             <div className="flex items-center justify-center gap-1 text-xs font-bold text-[#2a4c44] bg-[#2a4c44]/10 px-2 py-1 rounded-md">
                                                 <QrCode size={12} />
-                                                <span>CHECK-IN</span>
+                                                <span>Check-In</span>
                                             </div>
                                         </div>
                                     </div>
@@ -216,12 +243,13 @@ export default function MyTicketsPage({ onNavigateHome, onNavigateLogin, onNavig
                             );
                         })
                     ) : (
-                        <div className="text-center py-20 bg-white/10 rounded-3xl border-2 border-dashed border-white/30 text-white/60 flex flex-col items-center animate-in zoom-in-95 duration-500">
+                        /* Empty State */
+                        <div className="text-center py-20 bg-white/10 rounded-3xl border-2 border-dashed border-white/30 text-white/60 flex flex-col items-center animate-in zoom-in-95">
                             <Clapperboard size={48} className="mb-4 opacity-50"/>
                             <p className="text-xl font-bold">Belum ada tiket.</p>
-                            <p className="text-sm mt-1 mb-6 max-w-xs mx-auto">
+                            <p className="text-sm mt-1 mb-6 max-w-xs mx-auto text-white/80">
                                 {user 
-                                    ? "Yuk, pesan tiket nonton sekarang!" 
+                                    ? "Yuk, pesan tiket nonton sekarang dan nikmati film favoritmu!" 
                                     : "Silakan login terlebih dahulu untuk melihat riwayat tiket kamu."}
                             </p>
                             

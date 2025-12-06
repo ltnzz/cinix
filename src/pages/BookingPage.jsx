@@ -1,34 +1,37 @@
 import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
-import { Home, ChevronLeft, Calendar, Loader2, X, Ticket, MapPin, Clock, Film, Receipt, Info } from "lucide-react"; 
+import { Home, ChevronLeft, Calendar, Loader2, X, Ticket, MapPin, Clock, Film, Receipt, Info, Timer, RefreshCw } from "lucide-react"; 
 import { useNavigate, useLocation } from "react-router-dom";
 
 const API_BASE_URL = "https://cinix-be.vercel.app"; 
 
-const Seat = ({ id, status, onClick, label }) => {
+const Seat = ({ seatNumber, status, onClick }) => {
   const baseStyle = "w-9 h-9 md:w-11 md:h-11 rounded-t-lg text-[10px] md:text-xs font-bold transition-all duration-200 flex items-center justify-center select-none shadow-sm";
+  
   const styles = {
     available: "bg-white text-[#2a4c44] border border-gray-300 hover:bg-[#6a8e7f] hover:text-white hover:border-[#6a4c7] cursor-pointer hover:shadow-md hover:-translate-y-0.5",
     selected: "bg-[#6a8e7f] text-white shadow-lg transform scale-110 border border-[#6a8e7f] cursor-pointer ring-2 ring-[#6a8e7f]/30 z-10",
-    taken: "bg-gray-300 text-gray-400 cursor-not-allowed border-transparent opacity-80"
+    taken: "bg-gray-300 text-gray-400 cursor-not-allowed border-transparent opacity-80",
+    locked: "bg-amber-100 text-amber-600 border border-amber-300 cursor-not-allowed shadow-inner"
   };
 
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (status !== 'taken') {
-      onClick(id);
+    if (status === 'available' || status === 'selected') {
+      onClick(seatNumber);
     }
   };
 
   return (
     <button
       onClick={handleClick}
-      disabled={status === 'taken'}
+      disabled={status === 'taken' || status === 'locked'}
       className={`${baseStyle} ${styles[status]}`}
       type="button"
     >
-      {label}
+      {seatNumber}
+      {status === 'locked' && <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />}
     </button>
   );
 };
@@ -50,54 +53,38 @@ const Header = ({ title, subtitle, onBack, onHome }) => (
 
 const getCurrentUserDetail = (props) => {
     try {
-        const userFromProps = props.user || props.stateFromNav.user;
-        if (userFromProps && userFromProps.name && userFromProps.email) {
-            return userFromProps;
-        }
-
-        const userFromStorage = localStorage.getItem('user');
-        if (userFromStorage) {
-            const user = JSON.parse(userFromStorage);
-            return {
-                id: user.id_user || user.id || user.userId || user.email,
-                name: user.name || user.username || 'User',
-                email: user.email || 'user@example.com',
-            };
-        }
-    } catch (e) {
-        console.error("Error parsing user details:", e);
-    }
-    return { id: 'guest', name: 'Guest', email: 'guest@example.com' };
+        const userFromProps = props.user || props.stateFromNav?.user;
+        if (userFromProps?.name) return userFromProps;
+        const userStr = localStorage.getItem('user');
+        if (userStr) return JSON.parse(userStr);
+    } catch (e) { console.error(e); }
+    return { name: 'Guest' };
 };
-
 
 export default function BookingPage(props) {
   const navigate = useNavigate();
   const location = useLocation();
   const stateFromNav = location.state || {};
-
   const userDetails = getCurrentUserDetail(props); 
 
-  const movie = props.movie || stateFromNav.movie || { title: "Film", poster_url: "https://via.placeholder.com/300x450" };
-  const cinema = props.cinema || stateFromNav.cinema || "XXI Cinema";
-  
+  const movie = props.movie || stateFromNav.movie || { title: "Film", poster_url: "" };
+  const cinema = props.cinema || stateFromNav.cinema || "Cinema XXI";
   const time = props.time || stateFromNav.time || "00:00";
   const selectedDate = props.date || stateFromNav.date || new Date().toISOString(); 
-
+  
   const scheduleId = props.scheduleId || stateFromNav.scheduleId; 
-  const initialStudioId = props.studioId || stateFromNav.studioId;
-  
-  let userId = userDetails.id;
-  
+  const StudioId = props.studioId || stateFromNav.studioId;
   const midtransClientKey = props.midtransClientKey || stateFromNav.midtransClientKey || "SB-Mid-client-a24K2aKsd8sdasd"; 
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [seatsData, setSeatsData] = useState([]);
-  const [selectedSeats, setSelectedSeats] = useState([]);
+  const [seatsData, setSeatsData] = useState([]); 
+  const [selectedSeats, setSelectedSeats] = useState([]); 
   const [error, setError] = useState(null);
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   const ticketPrice = props.ticketPrice || 50000;
   const adminFee = 3000;  
@@ -111,11 +98,24 @@ export default function BookingPage(props) {
   const snapLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (!midtransClientKey) {
-      console.warn("Midtrans client key missing");
-      return;
+    let timer;
+    if (isLocked && timeLeft > 0) {
+      timer = setInterval(() => setTimeLeft((prev) => prev - 1), 1000);
+    } else if (isLocked && timeLeft === 0) {
+      alert("Waktu pembayaran habis! Kursi dilepas kembali.");
+      handleCancelCheckout(); 
     }
-    if (document.querySelector('script[data-midtrans-snap]')) {
+    return () => clearInterval(timer);
+  }, [isLocked, timeLeft]);
+
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  useEffect(() => {
+    if (!midtransClientKey || document.querySelector('script[data-midtrans-snap]')) {
       snapLoadedRef.current = !!window.snap;
       return;
     }
@@ -124,7 +124,10 @@ export default function BookingPage(props) {
     script.async = true;
     script.setAttribute("data-client-key", midtransClientKey);
     script.setAttribute("data-midtrans-snap", "true");
-    script.onload = () => { snapLoadedRef.current = !!window.snap; };
+    script.onload = () => { 
+        snapLoadedRef.current = !!window.snap; 
+    };
+    script.onerror = () => console.error("Failed to load Snap");
     document.body.appendChild(script);
   }, [midtransClientKey]);
 
@@ -132,108 +135,98 @@ export default function BookingPage(props) {
     const load = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
-        let currentStudioId = initialStudioId;
+        if (!StudioId) throw new Error("ID Studio tidak ditemukan. Mohon ulangi pemilihan jadwal.");
 
+        const res = await axios.get(`${API_BASE_URL}/studios/${StudioId}/seats`, { withCredentials: true });
+        const rawSeats = res.data?.data || res.data; 
+
+        if (!rawSeats || rawSeats.length === 0) throw new Error("Data kursi tidak tersedia.");
+
+        let currentScheduleBookings = [];
         if (scheduleId) {
             try {
-                const scheduleRes = await axios.get(`${API_BASE_URL}/schedules/${scheduleId}`, {
-                    withCredentials: true
-                });
-                const realStudioId = scheduleRes.data?.studio_id || scheduleRes.data?.data?.studio_id;
-                if (realStudioId) currentStudioId = realStudioId;
-            } catch (err) {
-                console.warn("Gagal verifikasi jadwal, mencoba ID awal...", err);
+                const localBookings = JSON.parse(localStorage.getItem('cinix_local_bookings') || '{}');
+                currentScheduleBookings = localBookings[String(scheduleId)] || [];
+            } catch (e) {
+                console.error("Error reading local storage", e);
             }
         }
 
-        if (!currentStudioId) {
-            throw new Error("Studio tidak ditemukan. Silakan kembali ke halaman sebelumnya.");
-        }
-
-        const res = await axios.get(`${API_BASE_URL}/studios/${currentStudioId}/seats`, { 
-          withCredentials: true 
-        });
-        const raw = res.data?.data || res.data;
-
-        if (!raw || raw.length === 0) {
-          throw new Error("Tidak ada data kursi tersedia untuk studio ini.");
-        }
-
-        const grouped = raw.reduce((acc, seat) => {
-          const row = seat.seat_number.charAt(0);
+        const grouped = rawSeats.reduce((acc, seat) => {
+          const row = seat.seat_number.charAt(0); 
           const num = parseInt(seat.seat_number.slice(1), 10);
+          
           if (!acc[row]) acc[row] = [];
           
+          const isTakenLocally = currentScheduleBookings.includes(seat.seat_number);
+
           acc[row].push({ 
             ...seat, 
-            id_seat: seat.seat_number, 
+            is_available: isTakenLocally ? false : seat.is_available,
             _num: num 
           });
           return acc;
         }, {});
 
         Object.keys(grouped).forEach(r => grouped[r].sort((a,b) => a._num - b._num));
-        const processed = Object.keys(grouped).sort().map(r => ({ rowLabel: r, seats: grouped[r] }));
         
+        const processed = Object.keys(grouped).sort().map(r => ({ rowLabel: r, seats: grouped[r] }));
         setSeatsData(processed);
+
       } catch (err) {
         console.error(err);
-        setError(err.message || "Gagal memuat data kursi. Periksa koneksi backend.");
+        setError(err.message || "Gagal memuat kursi.");
       } finally {
-        setTimeout(() => {
-            setIsLoading(false);
-        }, 800);
+        setTimeout(() => setIsLoading(false), 500);
       }
     };
-
     load();
-  }, [scheduleId, initialStudioId]);
+  }, [StudioId, scheduleId]);
 
-  const toggleSeat = (seatId) => {
-    if (selectedSeats.includes(seatId)) {
-      setSelectedSeats(prev => prev.filter(s => s !== seatId));
-      return;
+  const toggleSeat = (seatNumber) => {
+    if (isLocked) return; 
+
+    if (selectedSeats.includes(seatNumber)) {
+      setSelectedSeats(prev => prev.filter(s => s !== seatNumber));
+    } else {
+      if (selectedSeats.length >= maxSeats) return alert(`Max ${maxSeats} kursi.`);
+      setSelectedSeats(prev => [...prev, seatNumber]);
     }
-    if (selectedSeats.length >= maxSeats) {
-      alert(`Maksimal ${maxSeats} kursi per transaksi.`);
-      return;
-    }
-    setSelectedSeats(prev => [...prev, seatId]);
   };
-
-  const displaySeats = seatsData
-    .flatMap(row => row.seats)
-    .filter(seat => selectedSeats.includes(seat.id_seat))
-    .map(seat => seat.seat_number)
-    .sort((a,b) => a.localeCompare(b, undefined, {numeric: true}))
-    .join(", ");
 
   const handleInitialCheckout = () => {
     if (selectedSeats.length === 0) return;
-    setShowConfirmModal(true);
+    
+    if (!window.snap) {
+        alert("Sistem pembayaran sedang memuat, silakan tunggu beberapa detik dan coba lagi.");
+        return;
+    }
+
+    setTimeLeft(300); 
+    setIsLocked(true); 
+    setShowConfirmModal(true); 
+  };
+
+  const handleCancelCheckout = () => {
+    if (isSubmitting) return;
+    setShowConfirmModal(false);
+    setIsLocked(false); 
+    setTimeLeft(0);
   };
 
   const executePayment = async () => {
-    if (selectedSeats.length === 0) return;
-    
     if (!scheduleId) {
-      alert("Schedule tidak lengkap.");
-      setShowConfirmModal(false);
-      return;
+        alert("Data jadwal tidak valid. Mohon refresh halaman.");
+        return;
     }
-
+    
     setIsSubmitting(true);
-
     const params = new URLSearchParams();
     params.append("schedule_id", scheduleId);
-    params.append("seats", selectedSeats.join(","));
+    params.append("seats", selectedSeats.join(",")); 
     params.append("amount", subTotal.toString());
-
-    params.append("user_id", userDetails.id);
     params.append("user_name", userDetails.name);
-    params.append("user_email", userDetails.email);
 
     try {
       const res = await axios.post(`${API_BASE_URL}/payment`, params.toString(), {
@@ -243,160 +236,172 @@ export default function BookingPage(props) {
 
       const data = res.data || {};
       const token = data.token || data.snap?.token;
-      const redirectUrl = data.redirect_url;
 
       setShowConfirmModal(false); 
 
       if (token && window.snap) {
         window.snap.pay(token, {
-          onSuccess: function(result){
-            console.log("Midtrans success", result);
+          onSuccess: (result) => {
             try {
-                const storageUserId = userId || "guest_user"; 
-                const storageKey = `tickets_${storageUserId}`;
-                
+                const sId = String(scheduleId);
+                const localBookings = JSON.parse(localStorage.getItem('cinix_local_bookings') || '{}');
+                const existingScheduleBookings = localBookings[sId] || [];
+                localBookings[sId] = [...new Set([...existingScheduleBookings, ...selectedSeats])];
+                localStorage.setItem('cinix_local_bookings', JSON.stringify(localBookings));
+
+                const storageUserName = userDetails.name || "guest"; 
+                const ticketStorageKey = `tickets_${storageUserName}`;
+
                 const newTicket = {
-                    id: Date.now(), 
+                    id: Date.now(),
                     movie_title: movie.title,
                     movie_poster: movie.poster_url,
                     cinema_name: cinema,
                     showtime: time,
-                    watch_date: selectedDate, 
+                    watch_date: selectedDate,
                     booking_date: new Date().toISOString(),
-                    seats: selectedSeats, 
+                    seats: selectedSeats,
                     quantity: selectedSeats.length,
                     total_amount: grandTotal,
                     status: "Lunas",
-                    transaction_id: result.transaction_id || result.order_id
+                    transaction_id: result.transaction_id || result.order_id,
+                    schedule_id: scheduleId
                 };
 
-                const existingTickets = JSON.parse(localStorage.getItem(storageKey) || "[]");
+                const existingTickets = JSON.parse(localStorage.getItem(ticketStorageKey) || "[]");
                 const updatedTickets = [newTicket, ...existingTickets];
-                
-                localStorage.setItem(storageKey, JSON.stringify(updatedTickets));
+                localStorage.setItem(ticketStorageKey, JSON.stringify(updatedTickets));
             } catch (err) {
-                console.error("Gagal menyimpan tiket lokal:", err);
+                console.error("Gagal menyimpan data tiket/booking", err);
             }
 
-            alert("Pembayaran sukses! Tiket Anda telah diterbitkan.");
-            navigate("/mytickets"); 
+            const updatedData = seatsData.map(row => ({
+              ...row,
+              seats: row.seats.map(seat => {
+                if (selectedSeats.includes(seat.seat_number)) {
+                  return { ...seat, is_available: false }; 
+                }
+                return seat;
+              })
+            }));
+
+            setSeatsData(updatedData); 
+            setSelectedSeats([]);      
+            setIsLocked(false);        
+            
+            setTimeout(() => {
+                alert("Pembayaran Berhasil! Tiket diterbitkan.");
+                navigate("/mytickets");
+            }, 500);
           },
-          onPending: function(result){
-            alert("Pembayaran pending. Silakan selesaikan pembayaran Anda.");
-            navigate("/"); 
+          onPending: (result) => {
+            alert("Menunggu Pembayaran.");
+            navigate("/");
           },
-          onError: function(result){
-            alert("Terjadi kesalahan pembayaran. Silakan coba lagi.");
-            setIsSubmitting(false);
+          onError: (result) => {
+            alert("Pembayaran Gagal.");
+            setIsLocked(false);
           },
-          onClose: function(){
-            setIsSubmitting(false);
+          onClose: () => {
+            alert("Pembayaran dibatalkan.");
+            setIsLocked(false);
           }
         });
-
-      } else if (redirectUrl) {
-        window.location.href = redirectUrl;
       } else {
-        alert("Response pembayaran tidak valid.");
-        setIsSubmitting(false);
+          alert("Terjadi kesalahan pada gateway pembayaran. Silakan refresh halaman.");
+          setIsSubmitting(false);
+          setIsLocked(false);
       }
-
     } catch (err) {
       console.error(err);
-      alert(err.response?.data?.message || "Gagal memproses pembayaran. Silakan coba lagi.");
+      alert("Gagal memproses pembayaran. Cek koneksi internet Anda.");
+      setIsLocked(false); 
       setIsSubmitting(false);
-      setShowConfirmModal(false);
-    }
+    } 
   };
 
-  if (isLoading) {
-    return (
-        <div className="min-h-screen bg-[#6a8e7f] flex flex-col items-center justify-center gap-4">
-            <div className="relative">
-                <div className="w-16 h-16 border-4 border-[#fff9e6]/30 border-t-[#fff9e6] rounded-full animate-spin"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <Film size={20} className="text-[#fff9e6] opacity-80" />
-                </div>
-            </div>
-            <p className="text-[#fff9e6] font-bold text-lg animate-pulse tracking-wide">
-                Menyiapkan Kursi...
-            </p>
-        </div>
-    );
-  }
+  if (isLoading) return (
+    <div className="min-h-screen bg-[#6a8e7f] flex flex-col items-center justify-center text-white gap-3">
+        <Loader2 className="animate-spin" size={40} />
+        <span className="font-bold tracking-widest animate-pulse">MEMUAT STUDIO...</span>
+    </div>
+  );
 
   if (error) return (
-    <div className="min-h-screen bg-[#f5f1dc] flex flex-col items-center justify-center gap-4 p-6">
-      <div className="text-red-600 text-6xl">⚠️</div>
-      <h2 className="text-xl font-bold text-[#2a4c44]">Terjadi Kesalahan</h2>
-      <p className="text-gray-600 text-center max-w-md bg-white p-4 rounded-xl border border-red-200 shadow-sm font-mono text-sm">{error}</p>
-      <button onClick={() => window.location.reload()} className="mt-4 px-6 py-3 bg-[#2a4c44] text-white font-bold rounded-xl hover:bg-[#1e3630] transition">Coba Lagi</button>
+    <div className="min-h-screen flex flex-col items-center justify-center text-[#2a4c44] gap-4 p-4 text-center bg-[#f5f1dc]">
+        <div className="bg-red-100 p-4 rounded-full text-red-600"><X size={32}/></div>
+        <h2 className="font-bold text-xl">Terjadi Kesalahan</h2>
+        <p className="max-w-md text-gray-600">{error}</p>
+        <button onClick={() => navigate('/')} className="px-6 py-2 bg-[#2a4c44] text-white rounded-lg font-bold">
+            Kembali ke Beranda
+        </button>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-[#6a8e7f] flex flex-col font-sans animate-in fade-in duration-500">
-      <Header 
-        title={movie.title} 
-        subtitle={cinema || "AEON MALL TANJUNG BARAT XXI"} 
-        onBack={() => navigate(-1)} 
-        onHome={() => navigate('/')} 
-      />
+    <div className="min-h-screen bg-[#6a8e7f] flex flex-col font-sans animate-in fade-in">
+      <Header title={movie.title} subtitle={cinema} onBack={() => navigate(-1)} onHome={() => navigate('/')} />
 
-      <div className="flex-grow flex flex-col lg:flex-row p-4 md:p-6 gap-6 max-w-7xl mx-auto w-full relative z-10 animate-in slide-in-from-bottom-8 duration-700">
+      <div className="flex-grow flex flex-col lg:flex-row p-4 gap-6 max-w-7xl mx-auto w-full relative z-10">
         
-        <div className="flex-grow bg-[#f5f1dc] p-4 md:p-8 rounded-3xl shadow-xl flex flex-col items-center overflow-hidden relative border border-[#2a4c44]/10">
-          <h2 className="text-xl font-black text-[#2a4c44] mb-6 self-start">Pilih Kursi</h2>
-
-          <div className="w-full max-w-2xl mb-12 relative flex justify-center">
-            <div className="w-full h-4 bg-[#2a4c44] rounded-full shadow-[0_20px_60px_-10px_rgba(42,76,68,0.6)]"></div>
-            <div className="absolute top-7 text-[10px] font-bold text-gray-400 tracking-[0.4em]">LAYAR</div>
+        {/* SEAT MAP AREA */}
+        <div className="flex-grow bg-[#f5f1dc] p-4 rounded-3xl shadow-xl flex flex-col items-center relative border border-[#2a4c44]/10">
+          <div className="flex justify-between w-full mb-6 items-center px-2">
+            <h2 className="text-xl font-black text-[#2a4c44]">Layar Depan</h2>
+            {isLocked && (
+               <div className="flex items-center gap-2 text-amber-600 text-xs font-bold bg-amber-100 px-3 py-1 rounded-full animate-pulse border border-amber-200">
+                  <Clock size={14} /> {formatTime(timeLeft)}
+               </div>
+            )}
           </div>
+
+          <div className="w-full max-w-xl h-2 bg-[#2a4c44] rounded-full shadow-lg mb-10 opacity-80" />
 
           <div className="w-full overflow-x-auto pb-8 flex justify-center">
             <div className="flex flex-col gap-3 min-w-max px-4">
               {seatsData.map(row => (
                 <div key={row.rowLabel} className="flex items-center gap-8 md:gap-14 justify-center">
-                  <div className="flex gap-1 md:gap-1.5">
-                    {row.seats.slice(0,6).map(seat => (
-                      <Seat 
-                        key={seat.id_seat}
-                        id={seat.id_seat}
-                        label={seat.seat_number}
-                        status={!seat.is_available ? 'taken' : selectedSeats.includes(seat.id_seat) ? 'selected' : 'available'}
-                        onClick={toggleSeat} 
-                      />
-                    ))}
-                  </div>
-                  <div className="flex gap-1 md:gap-1.5">
-                    {row.seats.slice(6,12).map(seat => (
-                      <Seat 
-                        key={seat.id_seat}
-                        id={seat.id_seat}
-                        label={seat.seat_number}
-                        status={!seat.is_available ? 'taken' : selectedSeats.includes(seat.id_seat) ? 'selected' : 'available'}
-                        onClick={toggleSeat} 
-                      />
-                    ))}
-                  </div>
+                  {[row.seats.slice(0,6), row.seats.slice(6,12)].map((group, idx) => (
+                    <div key={idx} className="flex gap-1 md:gap-1.5">
+                      {group.map(seat => {
+                        let status = 'available';
+                        
+                        if (!seat.is_available) status = 'taken';
+                        else if (selectedSeats.includes(seat.seat_number)) {
+                          status = isLocked ? 'locked' : 'selected';
+                        }
+
+                        return (
+                          <Seat 
+                            key={seat.id_seat} 
+                            seatNumber={seat.seat_number} 
+                            status={status} 
+                            onClick={toggleSeat} 
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center gap-6 mt-4 pt-6 border-t border-[#2a4c44]/10 w-full text-sm text-[#2a4c44]">
-            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-white border border-gray-300"></div> Tersedia</div>
-            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-[#6a8e7f] border border-[#6a8e7f]"></div> Dipilih</div>
-            <div className="flex items-center gap-2"><div className="w-4 h-4 rounded bg-gray-300 opacity-80"></div> Terisi (Sold)</div>
+          <div className="flex flex-wrap justify-center gap-4 mt-4 pt-4 border-t border-[#2a4c44]/10 w-full text-xs text-[#2a4c44]">
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-white border border-gray-300"></div> Avail</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-[#6a8e7f]"></div> Selected</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-amber-100 border border-amber-300"></div> Paying</div>
+            <div className="flex items-center gap-1"><div className="w-3 h-3 rounded bg-gray-300"></div> Sold</div>
           </div>
         </div>
 
+        {/* SUMMARY SIDEBAR */}
         <div className="w-full lg:w-96 flex-shrink-0">
           <div className="bg-white p-6 rounded-3xl shadow-xl sticky top-24 border border-gray-100">
             <h2 className="text-xl font-black text-[#2a4c44] mb-6">Ringkasan</h2>
 
             <div className="flex gap-4 mb-6">
-              <img src={movie.poster_url} alt="Poster" className="w-20 h-28 object-cover rounded-xl shadow-md bg-gray-200" />
+              <img src={movie.poster_url || "https://placehold.co/100x150"} className="w-20 h-28 object-cover rounded-xl shadow-md bg-gray-200" alt="poster"/>
               <div>
                 <h3 className="font-bold text-[#2a4c44] line-clamp-2 leading-tight mb-1">{movie.title}</h3>
                 <p className="text-xs text-gray-500 font-medium mb-2">{cinema}</p>
@@ -413,7 +418,7 @@ export default function BookingPage(props) {
               <div className="flex justify-between items-start">
                 <span className="text-gray-500">Nomor Kursi ({selectedSeats.length})</span>
                 <span className="font-bold text-[#2a4c44] text-right max-w-[150px] leading-snug">
-                  {displaySeats || "-"}
+                  {selectedSeats.join(", ") || "-"}
                 </span>
               </div>
               
@@ -446,40 +451,31 @@ export default function BookingPage(props) {
 
             <button 
               onClick={handleInitialCheckout} 
-              disabled={selectedSeats.length === 0 || isSubmitting}
-              className="w-full py-4 bg-[#2a4c44] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e3630] hover:shadow-xl hover:-translate-y-1 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0 flex items-center justify-center gap-2"
+              disabled={selectedSeats.length === 0 || isLocked}
+              className="w-full py-4 bg-[#2a4c44] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e3630] disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Lanjut Pembayaran
+              {isLocked ? "Sedang Membayar..." : "Lanjut Bayar"}
             </button>
 
           </div>
         </div>
+
       </div>
 
+      {/* MODAL KONFIRMASI */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
-            onClick={() => !isSubmitting && setShowConfirmModal(false)}
-          ></div>
-          
-          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 bg-[#f5f1dc] flex justify-between items-center border-b border-[#2a4c44]/10">
-              <h3 className="text-lg font-black text-[#2a4c44] flex items-center gap-2">
-                <Receipt size={20}/> Konfirmasi Pesanan
-              </h3>
-              <button 
-                onClick={() => setShowConfirmModal(false)} 
-                disabled={isSubmitting}
-                className="p-2 bg-white/50 rounded-full hover:bg-white text-gray-500 transition disabled:opacity-50"
-              >
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 bg-[#f5f1dc] flex justify-between items-center border-b border-[#2a4c44]/10">
+              <h3 className="font-bold text-[#2a4c44] flex items-center gap-2"><Receipt size={18}/> Konfirmasi Pesanan</h3>
+              <div className="flex items-center gap-1 bg-amber-100 text-amber-600 px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                <Timer size={14}/> {formatTime(timeLeft)}
+              </div>
             </div>
 
-            <div className="p-6 overflow-y-auto">
+            <div className="p-6">
               <div className="flex gap-4 mb-6 bg-[#f8f9fa] p-3 rounded-2xl border border-gray-100">
-                <img src={movie.poster_url} alt="Poster" className="w-16 h-24 object-cover rounded-lg shadow-sm" />
+                <img src={movie.poster_url || "https://placehold.co/100x150"} className="w-16 h-24 object-cover rounded-lg shadow-sm" alt="poster" />
                 <div className="flex flex-col justify-center">
                   <h4 className="font-bold text-[#2a4c44] leading-tight text-sm mb-1">{movie.title}</h4>
                   <span className="text-xs text-gray-500">{cinema}</span>
@@ -507,30 +503,19 @@ export default function BookingPage(props) {
 
               <div className="mt-4 flex items-start gap-2 bg-blue-50 p-3 rounded-lg text-blue-800 text-xs">
                 <Info size={16} className="shrink-0 mt-0.5"/>
-                <p>Pastikan jadwal dan kursi sudah benar. Tiket yang dibeli tidak dapat ditukar atau dikembalikan.</p>
+                <p>Selesaikan pembayaran dalam <span className="font-bold">{formatTime(timeLeft)}</span>. Tiket yang dibeli tidak dapat ditukar/dikembalikan.</p>
               </div>
-            </div>
 
-            <div className="p-6 pt-2 bg-white border-t border-gray-100 flex gap-3">
-              <button 
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isSubmitting}
-                className="flex-1 py-3 text-gray-600 font-bold bg-gray-100 rounded-xl hover:bg-gray-200 transition disabled:opacity-50"
-              >
-                Batal
-              </button>
-              <button 
-                onClick={executePayment}
-                disabled={isSubmitting}
-                className="flex-1 py-3 bg-[#2a4c44] text-white font-bold rounded-xl shadow-lg hover:bg-[#1e3630] transition disabled:bg-gray-400 flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : "Bayar Sekarang"}
-              </button>
+              <div className="flex gap-3 mt-6">
+                <button onClick={handleCancelCheckout} disabled={isSubmitting} className="flex-1 py-3 text-gray-600 font-bold bg-gray-100 rounded-xl hover:bg-gray-200">Batal</button>
+                <button onClick={executePayment} disabled={isSubmitting} className="flex-1 py-3 bg-[#2a4c44] text-white font-bold rounded-xl hover:bg-[#1e3630] flex justify-center items-center gap-2">
+                  {isSubmitting ? <Loader2 className="animate-spin" size={16}/> : "Bayar Sekarang"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
     </div>
   );
 }
