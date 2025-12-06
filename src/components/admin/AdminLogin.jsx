@@ -38,7 +38,7 @@ export default function AdminLogin() {
         password: formData.password.trim()
       }
 
-      const response = await axios.post(`${API_BASE_URL}/admin/login`, params, {
+      const response = await axios.post(`${API_BASE_URL}/admin/login`, payload, {
         headers: { 'Content-Type': 'application/json' },
         withCredentials: true 
       });
@@ -67,11 +67,11 @@ export default function AdminLogin() {
         <form onSubmit={handleLogin} className="space-y-6">
           <div>
             <label className="block text-sm font-bold text-[#2a4c44] mb-2">Email Admin</label>
-            <input type="email" required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" />
+            <input type="email" name="email" value={formData.email} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" />
           </div>
           <div>
             <label className="block text-sm font-bold text-[#2a4c44] mb-2">Password</label>
-            <input type="password" required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" />
+            <input type="password" name="password" value={formData.password} onChange={handleChange} required className="w-full px-4 py-3 rounded-xl border-2 border-[#2a4c44]/20 focus:border-[#2a4c44] bg-white outline-none" />
           </div>
           <button type="submit" disabled={loading} className="w-full py-3 bg-[#2a4c44] text-white font-bold rounded-xl hover:bg-[#1e3630] transition-all flex justify-center">
             {loading ? <Loader2 className="animate-spin" /> : "Masuk Dashboard"}
