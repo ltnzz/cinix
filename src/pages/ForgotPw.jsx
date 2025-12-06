@@ -4,6 +4,8 @@ import { Mail, ArrowLeft, Loader2, CheckCircle } from "lucide-react";
 import AuthHeader from "../components/AuthHeader";
 import FormInput from "../components/FormInput";
 
+const API_BASE_URL = "https://cinix-be.vercel.app"
+
 export default function ForgotPasswordPage({ onNavigateLogin }) {
   const backgroundImageUrl = "https://i.imgur.com/Mvn8b2b.png";
   
@@ -19,11 +21,12 @@ export default function ForgotPasswordPage({ onNavigateLogin }) {
     setError(null);
 
     try {
-      const endpoint = "https://cinix-be.vercel.app/forgot-password";
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const response = await axios.post(`${API_BASE_URL}/forgot-password`, {
+        email: email
+      });
 
-      setMessage("Link reset password telah dikirim ke email Anda.");
-      setEmail(""); 
+      setMessage(response.data.message || "Link reset password telah dikirim ke email Anda.");
+      setEmail("");  
 
     } catch (err) {
       setError("Email tidak ditemukan atau terjadi kesalahan server.");
@@ -87,10 +90,10 @@ export default function ForgotPasswordPage({ onNavigateLogin }) {
               }`}
             >
               {loading ? (
-                 <div className="flex items-center justify-center gap-2">
+                <div className="flex items-center justify-center gap-2">
                     <Loader2 className="animate-spin" size={20}/>
                     <span>Sending...</span>
-                 </div>
+                </div>
               ) : "Send Reset Link"}
             </button>
           </form>

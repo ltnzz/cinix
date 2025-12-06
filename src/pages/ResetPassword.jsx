@@ -1,141 +1,186 @@
-import React, { useState } from 'react';
-import axios from 'axios';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Lock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import React, { useState } from "react";
+import axios from "axios";
+import { useParams, useNavigate } from "react-router-dom";
+import { Lock, Eye, EyeOff, Loader2, CheckCircle, ArrowLeft } from "lucide-react";
 
-const API_BASE_URL = "https://cinix-be.vercel.app"; 
+// --- KONFIGURASI URL ---
+const API_BASE_URL = "http://localhost:2000"; 
 
+// --- INTERNAL COMPONENTS (Styling Konsisten) ---
+
+const AuthHeader = () => (
+  <header className="absolute top-0 left-0 w-full p-6 z-10 flex justify-between items-center">
+    <div className="text-3xl font-black text-white tracking-tighter cursor-pointer">
+      CINIX<span className="text-amber-500">.</span>
+    </div>
+  </header>
+);
+
+// Komponen Input Password Khusus (Ada Toggle Eye)
+const PasswordInput = ({ id, label, placeholder, value, onChange, showPassword, toggleShow }) => (
+  <div className="mb-5">
+    <label htmlFor={id} className="block text-xs font-bold text-gray-300 uppercase tracking-wider mb-2 ml-1">
+      {label}
+    </label>
+    <div className="relative group">
+      {/* Icon Kiri (Lock) */}
+      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-amber-400 transition-colors">
+        <Lock size={18} />
+      </div>
+      
+      {/* Input Field */}
+      <input
+        id={id}
+        type={showPassword ? "text" : "password"}
+        className="w-full pl-11 pr-12 py-3.5 bg-gray-800/50 border border-gray-600 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all shadow-sm backdrop-blur-sm"
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        required
+      />
+
+      {/* Tombol Toggle Mata (Kanan) */}
+      <button
+        type="button"
+        onClick={toggleShow}
+        className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-amber-400 transition-colors focus:outline-none"
+      >
+        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  </div>
+);
+
+// --- MAIN PAGE ---
 export default function ResetPasswordPage() {
-const { token } = useParams();
-const navigate = useNavigate();
+    const { token } = useParams();
+    const navigate = useNavigate();
+    const backgroundImageUrl = "https://i.imgur.com/Mvn8b2b.png";
 
-const [password, setPassword] = useState('');
-const [confirmPassword, setConfirmPassword] = useState('');
-const [showPassword, setShowPassword] = useState(false);
+    const [password, setPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
+    
+    const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState({ type: "", message: "" });
 
-const [isLoading, setIsLoading] = useState(false);
-const [status, setStatus] = useState({ type: '', message: '' }); // type: 'success' | 'error'
-
-const handleSubmit = async (e) => {
+    const handleReset = async (e) => {
     e.preventDefault();
     
     if (password !== confirmPassword) {
-        setStatus({ type: 'error', message: 'Password konfirmasi tidak cocok.' });
+        setStatus({ type: "error", message: "Konfirmasi password tidak cocok." });
         return;
     }
 
-    setIsLoading(true);
-    setStatus({ type: '', message: '' });
+    setLoading(true);
+    setStatus({ type: "", message: "" });
 
     try {
         const response = await axios.post(`${API_BASE_URL}/reset-password`, {
-            token,
-            password
+            token,    
+            password  
         });
 
-        setStatus({ type: 'success', message: 'Password berhasil diubah! Mengalihkan ke login...' });
+        setStatus({ type: "success", message: "Password berhasil diubah! Mengalihkan..." });
         
         setTimeout(() => {
-            navigate('/login');
+            navigate("/login");
         }, 3000);
+
     } catch (err) {
         console.error(err);
-        const msg = err.response?.data?.message || 'Gagal mereset password. Link mungkin sudah kadaluarsa atau tidak valid.';
-        setStatus({ type: 'error', message: msg });
+        const msg = err.response?.data?.message || "Gagal mereset password. Token mungkin kadaluarsa.";
+        setStatus({ type: "error", message: msg });
     } finally {
-        setIsLoading(false);
+        setLoading(false);
     }
 };
 
 return (
-    <div className="min-h-screen bg-[#6a8e7f] flex items-center justify-center p-4 font-sans">
-        <div className="bg-[#f5f1dc] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-300">
-            
-            <div className="bg-[#2a4c44] p-8 text-center relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-amber-400 to-amber-600"></div>
-            <h1 className="text-2xl font-black text-[#fff9e6] tracking-wide mb-1">RESET PASSWORD</h1>
-            <p className="text-[#fff9e6]/80 text-sm">Buat kata sandi baru untuk akunmu</p>
+    <div className="flex flex-col min-h-screen relative bg-gray-900">
+        <AuthHeader />
+
+        <main
+            className="flex-grow w-full flex items-center justify-center p-4"
+            style={{
+            backgroundImage: `url(${backgroundImageUrl})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            }}
+        >
+        
+        <div className="absolute inset-0 bg-black/50"></div>
+
+        <div className="w-full max-w-md bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl p-8 text-white relative border border-white/10">
+
+        <div className="text-center mb-8">
+            <h2 className="text-3xl font-black mb-2 tracking-tight text-white">Reset Password</h2>
+            <p className="text-gray-400 text-sm leading-relaxed">
+                Silakan masukkan kata sandi baru untuk akun Anda.
+            </p>
+        </div>
+
+        {status.message && (
+            <div className={`mb-6 p-4 rounded-xl flex items-start gap-3 animate-in fade-in slide-in-from-top-2 border ${
+            status.type === 'success' 
+                ? 'bg-green-500/20 border-green-500/50 text-green-100' 
+                : 'bg-red-500/20 border-red-500/50 text-red-100'
+            }`}>
+            <CheckCircle className={`shrink-0 mt-0.5 ${status.type === 'success' ? 'text-green-400' : 'text-red-400'}`} size={18} />
+            <p className="text-sm font-medium">{status.message}</p>
             </div>
+        )}
 
-            <div className="p-8">
-            {status.message && (
-                <div className={`mb-6 p-4 rounded-xl flex items-start gap-3 text-sm font-bold animate-in slide-in-from-top-2 ${
-                status.type === 'success' 
-                    ? 'bg-green-100 text-green-800 border border-green-200' 
-                    : 'bg-red-100 text-red-800 border border-red-200'
-                }`}>
-                {status.type === 'success' ? <CheckCircle size={20} className="shrink-0"/> : <AlertCircle size={20} className="shrink-0"/>}
-                <p>{status.message}</p>
-                </div>
-            )}
+        <form onSubmit={handleReset}>
+            <PasswordInput 
+                id="new-password"
+                label="Password Baru"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                showPassword={showPassword}
+                toggleShow={() => setShowPassword(!showPassword)}
+            />
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-                
-                <div className="space-y-1">
-                <label className="text-xs font-bold text-[#2a4c44] uppercase tracking-wider ml-1">Password Baru</label>
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#2a4c44] transition-colors">
-                    <Lock size={18} />
-                    </div>
-                    <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-11 pr-12 py-3.5 bg-white border-2 border-transparent focus:border-[#2a4c44]/20 rounded-xl text-[#2a4c44] placeholder-gray-400 outline-none transition-all shadow-sm focus:shadow-md font-bold"
-                    placeholder="••••••••"
-                    required
-                    />
-                    <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-[#2a4c44] transition-colors"
-                    >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                </div>
-                </div>
+            <PasswordInput 
+                id="confirm-password"
+                label="Konfirmasi Password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                showPassword={showPassword}
+                toggleShow={() => setShowPassword(!showPassword)}
+            />
 
-                <div className="space-y-1">
-                <label className="text-xs font-bold text-[#2a4c44] uppercase tracking-wider ml-1">Konfirmasi Password</label>
-                <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#2a4c44] transition-colors">
-                    <Lock size={18} />
-                    </div>
-                    <input
-                    type={showPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className={`w-full pl-11 pr-4 py-3.5 bg-white border-2 rounded-xl text-[#2a4c44] placeholder-gray-400 outline-none transition-all shadow-sm focus:shadow-md font-bold ${
-                        confirmPassword && password !== confirmPassword 
-                        ? 'border-red-300 focus:border-red-400 text-red-600' 
-                        : 'border-transparent focus:border-[#2a4c44]/20'
-                    }`}
-                    placeholder="••••••••"
-                    required
-                    />
-                </div>
-                {confirmPassword && password !== confirmPassword && (
-                    <p className="text-[10px] text-red-500 font-bold ml-1 mt-1 animate-pulse">Password tidak cocok</p>
-                )}
-                </div>
-
-                <button
+            <button
                 type="submit"
-                disabled={isLoading || !password || !confirmPassword || password !== confirmPassword}
-                className="w-full bg-[#2a4c44] text-[#fff9e6] py-4 rounded-xl font-black text-lg hover:bg-[#1e3630] hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none disabled:translate-y-0 flex items-center justify-center gap-2 mt-4"
-                >
-                {isLoading ? <Loader2 className="animate-spin" /> : "UBAH PASSWORD"}
-                </button>
+                disabled={loading || !password || !confirmPassword}
+                className={`w-full font-bold py-4 rounded-xl transition-all shadow-lg hover:shadow-amber-500/20 mt-4 ${
+                loading 
+                    ? "bg-gray-700 cursor-not-allowed text-gray-400" 
+                    : "bg-amber-500 hover:bg-amber-400 text-black transform hover:-translate-y-0.5 active:translate-y-0"
+            }`}
+            >
+                {loading ? (
+                    <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="animate-spin" size={20}/>
+                        <span>Memproses...</span>
+                    </div>
+            ) : "Simpan Password Baru"}
+            </button>
+        </form>
 
-            </form>
-            </div>
-            
-            <div className="bg-[#2a4c44]/5 p-4 text-center">
-                <button onClick={() => navigate('/login')} className="text-xs font-bold text-[#2a4c44]/70 hover:text-[#2a4c44] hover:underline">
-                    Kembali ke Login
-                </button>
-            </div>
+        <div className="mt-8 text-center border-t border-gray-700/50 pt-6">
+            <button
+            onClick={() => navigate('/login')}
+            className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors text-sm font-bold group"
+            >
+            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform"/>
+            Batal & Kembali Login
+            </button>
         </div>
         </div>
-    );
+    </main>
+    </div>
+);
 }
