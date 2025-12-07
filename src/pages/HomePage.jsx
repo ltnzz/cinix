@@ -242,7 +242,7 @@ export default function HomePage({ onNavigateHome, onNavigateLogin, onNavigateSe
                             <h3 className="font-bold text-lg text-white truncate mb-1 group-hover:text-amber-400 transition-colors">{movie.title}</h3>
                             <div className="flex items-center justify-between text-xs text-gray-300">
                                 <span className="truncate max-w-[80px]">{movie.genre?.split(',')[0]}</span>
-                                <div className="flex items-center gap-1 text-amber-400 font-bold"><Star size={12} fill="currentColor" />{movie.rating || "-"}</div>
+                                <div className="flex items-center gap-0.5 text-amber-400 font-bold"><Star size={12} fill="currentColor" />{movie.rating || "-"}</div>
                             </div>
                         </div>
                     </div>

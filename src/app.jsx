@@ -26,7 +26,7 @@ const AuthGuard = ({ user, children }) => {
     <div className="min-h-screen bg-[#6a8e7f] flex items-center justify-center p-4">
       <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
         <div className="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl relative animate-in zoom-in-95 duration-300 text-center mx-4">
-          <button onClick={() => navigate('/login')} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
+          <button onClick={() => navigate('/')} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"><X size={24} /></button>
           <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6"><Lock className="text-red-500 w-10 h-10" /></div>
           <h3 className="text-2xl font-black text-[#2a4c44] mb-2">Akses Dibatasi</h3>
           <p className="text-gray-500 font-medium mb-8 leading-relaxed">Ups! Halaman ini khusus buat member. <br/>Login dulu yuk buat akses fitur ini.</p>

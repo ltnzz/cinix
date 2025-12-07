@@ -223,11 +223,6 @@ export default function SearchPage() {
             size={28}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-amber-500 transition-colors"
           />
-          {isLoading && (
-            <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                <Loader2 size={24} className="text-[#2a4c44] animate-spin" />
-            </div>
-          )}
         </div>
 
         <div className="space-y-4 pb-20">

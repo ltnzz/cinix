@@ -43,10 +43,9 @@ export default function LoginPage({ onNavigateRegister, onNavigateForgotPassword
       if (response.data.token) {
         localStorage.setItem("token", response.data.token);
         
-        let userData = response.data.user;
+        let userData = response.data.data;
         if (!userData) {
-            const fakeName = formData.email.split('@')[0];
-            userData = { name: fakeName, email: formData.email };
+            userData = { name: userData.name, email: formData.email };
         }
         localStorage.setItem("user", JSON.stringify(userData));
         
