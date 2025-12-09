@@ -344,18 +344,17 @@ export default function BookingPage(props) {
 
       <div className="flex-grow flex flex-col lg:flex-row p-4 gap-6 max-w-7xl mx-auto w-full relative z-10">
         
-        {/* SEAT MAP AREA */}
         <div className="flex-grow bg-[#f5f1dc] p-4 rounded-3xl shadow-xl flex flex-col items-center relative border border-[#2a4c44]/10">
           <div className="flex justify-between w-full mb-6 items-center px-2">
-            <h2 className="text-xl font-black text-[#2a4c44]">Layar Depan</h2>
             {isLocked && (
-               <div className="flex items-center gap-2 text-amber-600 text-xs font-bold bg-amber-100 px-3 py-1 rounded-full animate-pulse border border-amber-200">
+              <div className="flex items-center gap-2 text-amber-600 text-xs font-bold bg-amber-100 px-3 py-1 rounded-full animate-pulse border border-amber-200">
                   <Clock size={14} /> {formatTime(timeLeft)}
-               </div>
+              </div>
             )}
           </div>
 
-          <div className="w-full max-w-xl h-2 bg-[#2a4c44] rounded-full shadow-lg mb-10 opacity-80" />
+          <div className="w-full max-w-2xl h-3 bg-[#2a4c44] rounded-full shadow-lg mb-2 opacity-80" />
+          <h2 className="text-xl font-black text-[#2a4c44] mb-4">Layar</h2>
 
           <div className="w-full overflow-x-auto pb-8 flex justify-center">
             <div className="flex flex-col gap-3 min-w-max px-4">
@@ -395,7 +394,6 @@ export default function BookingPage(props) {
           </div>
         </div>
 
-        {/* SUMMARY SIDEBAR */}
         <div className="w-full lg:w-96 flex-shrink-0">
           <div className="bg-white p-6 rounded-3xl shadow-xl sticky top-24 border border-gray-100">
             <h2 className="text-xl font-black text-[#2a4c44] mb-6">Ringkasan</h2>
@@ -462,7 +460,6 @@ export default function BookingPage(props) {
 
       </div>
 
-      {/* MODAL KONFIRMASI */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
