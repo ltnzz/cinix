@@ -321,9 +321,16 @@ export default function BookingPage(props) {
   };
 
   if (isLoading) return (
-    <div className="min-h-screen bg-[#6a8e7f] flex flex-col items-center justify-center text-white gap-3">
-        <Loader2 className="animate-spin" size={40} />
-        <span className="font-bold tracking-widest animate-pulse">MEMUAT STUDIO...</span>
+    <div className="min-h-screen bg-[#6a8e7f] flex flex-col items-center justify-center gap-4">
+      <div className="relative">
+        <div className="w-16 h-16 border-4 border-[#fff9e6]/30 border-t-[#fff9e6] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Film size={20} className="text-[#fff9e6] opacity-80" />
+          </div>
+      </div>
+        <p className="text-[#fff9e6] font-bold text-lg animate-pulse tracking-wide">
+          Memuat Studio...
+        </p>
     </div>
   );
 
